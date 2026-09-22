@@ -235,11 +235,27 @@
           <button id="calToday" class="px-3 py-2 rounded-lg glass hover-glow text-sm font-medium">Hoje</button>
         </div>
 
-        <div class="hidden sm:block glass rounded-2xl overflow-hidden">
-          <div class="grid grid-cols-7 text-center text-xs font-semibold text-muted uppercase tracking-wide border-b border-white/5">
-            <div class="py-2">Dom</div><div class="py-2">Seg</div><div class="py-2">Ter</div><div class="py-2">Qua</div><div class="py-2">Qui</div><div class="py-2">Sex</div><div class="py-2">Sáb</div>
+        <div class="flex gap-4 items-start">
+          <div class="hidden sm:block glass rounded-2xl overflow-hidden flex-1 min-w-0">
+            <div class="grid grid-cols-7 text-center text-xs font-semibold text-muted uppercase tracking-wide border-b border-white/5">
+              <div class="py-2">Dom</div><div class="py-2">Seg</div><div class="py-2">Ter</div><div class="py-2">Qua</div><div class="py-2">Qui</div><div class="py-2">Sex</div><div class="py-2">Sáb</div>
+            </div>
+            <div id="calendarGrid" class="grid grid-cols-7 divide-x divide-y divide-white/5"></div>
           </div>
-          <div id="calendarGrid" class="grid grid-cols-7 divide-x divide-y divide-white/5"></div>
+
+          <div id="dayPanel" class="hidden lg:flex flex-col w-72 shrink-0 glass rounded-2xl p-4 self-stretch">
+            <div class="flex items-center justify-between mb-3 gap-2">
+              <div class="min-w-0">
+                <p id="dayPanelWeekday" class="text-xs text-muted truncate"></p>
+                <p id="dayPanelDate" class="text-[1rem] font-semibold truncate"></p>
+              </div>
+              <button id="dayPanelAddBtn" type="button" class="shrink-0 p-2 rounded-lg glass hover-glow" title="Novo evento neste dia">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
+            <div id="dayPanelList" class="space-y-2 flex-1 overflow-y-auto"></div>
+            <div id="dayPanelEmpty" class="hidden text-center py-10 text-muted text-sm">Nada agendado para este dia.</div>
+          </div>
         </div>
 
         <div id="calendarAgenda" class="sm:hidden space-y-3"></div>
@@ -610,7 +626,7 @@
   primaryActionBtn.addEventListener('click', () => {
     if (activeTab === 'backlog') openTaskModal();
     else if (activeTab === 'clientes') openClientModal();
-    else openEventModal();
+    else openEventModal(null, selectedDate);
   });
 
   // ---------- Sidebar (mobile) ----------
@@ -1015,6 +1031,7 @@
   const calendarEmpty = document.getElementById('calendarEmpty');
   const calMonthLabel = document.getElementById('calMonthLabel');
   const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const WEEKDAY_FULL = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
   const MONTH_LABELS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
   const today = new Date();
@@ -1025,6 +1042,7 @@
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
   const todayISO = toISODate(today);
+  let selectedDate = todayISO;
 
   function eventsOnDate(iso) {
     return events.filter(ev => ev.date === iso).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
@@ -1047,8 +1065,9 @@
       const visible = dayEvents.slice(0, 3);
       const extra = dayEvents.length - visible.length;
 
+      const isSelected = iso === selectedDate;
       const cell = document.createElement('div');
-      cell.className = `min-h-[100px] p-2 cursor-pointer hover:bg-white/[0.03] transition ${inMonth ? '' : 'opacity-40'}`;
+      cell.className = `min-h-[100px] p-2 cursor-pointer hover:bg-white/[0.03] transition ${inMonth ? '' : 'opacity-40'} ${isSelected ? 'ring-1 ring-inset ring-accent-glow bg-white/[0.04]' : ''}`;
       cell.dataset.date = iso;
       cell.innerHTML = `
         <p class="text-xs font-semibold mb-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full ${isToday ? 'bg-accent text-white' : ''}">${d.getDate()}</p>
@@ -1089,13 +1108,44 @@
       `;
       calendarAgenda.appendChild(box);
     });
+
+    renderDayPanel();
   }
+
+  function renderDayPanel() {
+    const d = new Date(selectedDate + 'T00:00:00');
+    document.getElementById('dayPanelWeekday').textContent = WEEKDAY_FULL[d.getDay()];
+    document.getElementById('dayPanelDate').textContent = `${d.getDate()} de ${MONTH_LABELS[d.getMonth()]}`;
+
+    const list = document.getElementById('dayPanelList');
+    const dayPanelEmpty = document.getElementById('dayPanelEmpty');
+    const dayEvents = eventsOnDate(selectedDate);
+    list.innerHTML = '';
+    dayPanelEmpty.classList.toggle('hidden', dayEvents.length > 0);
+
+    dayEvents.forEach(ev => {
+      const row = document.createElement('div');
+      row.className = 'event-chip px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition';
+      row.dataset.id = ev.id;
+      row.innerHTML = `
+        <p class="text-sm font-medium truncate">${escapeHtml(ev.title)}</p>
+        ${ev.time ? `<p class="text-xs text-accent-glow">${escapeHtml(ev.time)}</p>` : ''}
+      `;
+      row.addEventListener('click', () => openEventModal(ev.id));
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById('dayPanelAddBtn').addEventListener('click', () => openEventModal(null, selectedDate));
 
   calendarGrid.addEventListener('click', (e) => {
     const chip = e.target.closest('.event-chip');
     if (chip) { openEventModal(chip.dataset.id); return; }
     const cell = e.target.closest('[data-date]');
-    if (cell) openEventModal(null, cell.dataset.date);
+    if (cell) {
+      selectedDate = cell.dataset.date;
+      renderCalendar();
+    }
   });
   calendarAgenda.addEventListener('click', (e) => {
     const chip = e.target.closest('.event-chip');
@@ -1113,6 +1163,7 @@
   document.getElementById('calToday').addEventListener('click', () => {
     calYear = today.getFullYear();
     calMonth = today.getMonth();
+    selectedDate = todayISO;
     renderCalendar();
   });
 
