@@ -106,6 +106,10 @@
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Clientes &amp; Campanhas
       </button>
+      <button data-tab="calendario" class="nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-muted transition-all hover-glow border border-transparent">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendário
+      </button>
     </nav>
 
     <div class="mt-auto p-4 rounded-xl glass text-xs text-muted">
@@ -198,6 +202,35 @@
         <div id="clientEmpty" class="hidden text-center py-16 text-muted glass rounded-2xl">
           <p class="text-lg font-semibold mb-1">Nenhum cliente cadastrado</p>
           <p class="text-sm">Clique em "Novo Cliente" para começar.</p>
+        </div>
+      </section>
+
+      <!-- ==================== ABA CALENDÁRIO ==================== -->
+      <section id="view-calendario" class="fade-in hidden">
+        <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <div class="flex items-center gap-2">
+            <button id="calPrev" class="p-2 rounded-lg glass hover-glow" title="Mês anterior">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <h2 id="calMonthLabel" class="text-[1rem] font-semibold w-44 text-center capitalize"></h2>
+            <button id="calNext" class="p-2 rounded-lg glass hover-glow" title="Próximo mês">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+          <button id="calToday" class="px-3 py-2 rounded-lg glass hover-glow text-sm font-medium">Hoje</button>
+        </div>
+
+        <div class="hidden sm:block glass rounded-2xl overflow-hidden">
+          <div class="grid grid-cols-7 text-center text-xs font-semibold text-muted uppercase tracking-wide border-b border-white/5">
+            <div class="py-2">Dom</div><div class="py-2">Seg</div><div class="py-2">Ter</div><div class="py-2">Qua</div><div class="py-2">Qui</div><div class="py-2">Sex</div><div class="py-2">Sáb</div>
+          </div>
+          <div id="calendarGrid" class="grid grid-cols-7 divide-x divide-y divide-white/5"></div>
+        </div>
+
+        <div id="calendarAgenda" class="sm:hidden space-y-3"></div>
+        <div id="calendarEmpty" class="sm:hidden hidden text-center py-16 text-muted glass rounded-2xl">
+          <p class="text-lg font-semibold mb-1">Nenhum evento neste mês</p>
+          <p class="text-sm">Clique em "Novo Evento" para começar.</p>
         </div>
       </section>
 
@@ -320,10 +353,45 @@
   </div>
 </div>
 
+<!-- ==================== MODAL EVENTO ==================== -->
+<div id="eventModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-backdrop">
+  <div class="glass-strong rounded-2xl w-full max-w-lg p-6 shadow-glowLg fade-in">
+    <div class="flex items-center justify-between mb-5">
+      <h2 id="eventModalTitle" class="text-lg font-bold">Novo Evento</h2>
+      <button class="modal-close text-muted hover:text-white transition" data-modal="eventModal">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="eventForm" class="space-y-4">
+      <input type="hidden" id="eventId">
+      <div>
+        <label class="text-xs font-medium text-muted block mb-1.5">Título</label>
+        <input required id="eventTitle" type="text" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50" placeholder="Ex: Reunião com cliente">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs font-medium text-muted block mb-1.5">Data</label>
+          <input required id="eventDate" type="date" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-muted block mb-1.5">Horário</label>
+          <input id="eventTime" type="time" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+        </div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" id="eventDeleteBtn" class="hidden px-4 py-2.5 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30 text-sm font-semibold hover:bg-red-500/25 transition">Excluir</button>
+        <button type="button" data-modal="eventModal" class="modal-close flex-1 px-4 py-2.5 rounded-lg glass hover-glow text-sm font-semibold">Cancelar</button>
+        <button type="submit" class="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-br from-accent to-accent-light text-sm font-semibold shadow-glow hover-glow">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 (() => {
   const TASKS_KEY = 'hc_tasks';
   const CLIENTS_KEY = 'hc_clients';
+  const EVENTS_KEY = 'hc_events';
 
   const seedClients = () => ([
     { id: crypto.randomUUID(), name: 'Loja Nova Era', status: 'Saudável', stages: {
@@ -361,6 +429,13 @@
     { id: crypto.randomUUID(), title: 'Reunião de alinhamento mensal', client: clients[5]?.id || '', priority: 'Média', status: 'Em Andamento', due: nextDays(3) },
   ]);
 
+  const seedEvents = () => ([
+    { id: crypto.randomUUID(), title: 'Reunião de alinhamento — Loja Nova Era', date: nextDays(1), time: '10:00' },
+    { id: crypto.randomUUID(), title: 'Call de performance — TechParts', date: nextDays(2), time: '14:30' },
+    { id: crypto.randomUUID(), title: 'Apresentação de resultados mensais', date: nextDays(5), time: '09:00' },
+    { id: crypto.randomUUID(), title: 'Planejamento de Black Friday', date: nextDays(-2), time: '16:00' },
+  ]);
+
   function nextDays(n) {
     const d = new Date();
     d.setDate(d.getDate() + n);
@@ -383,10 +458,15 @@
 
   let clients = load(CLIENTS_KEY, seedClients);
   let tasks = load(TASKS_KEY, () => seedTasks(clients));
+  let events = load(EVENTS_KEY, seedEvents);
 
   // ---------- Navigation ----------
   const navBtns = document.querySelectorAll('.nav-btn');
-  const views = { backlog: document.getElementById('view-backlog'), clientes: document.getElementById('view-clientes') };
+  const views = {
+    backlog: document.getElementById('view-backlog'),
+    clientes: document.getElementById('view-clientes'),
+    calendario: document.getElementById('view-calendario'),
+  };
   const pageTitle = document.getElementById('pageTitle');
   const pageSubtitle = document.getElementById('pageSubtitle');
   const primaryActionBtn = document.getElementById('primaryActionBtn');
@@ -395,6 +475,13 @@
   const titles = {
     backlog: ['Backlog de Tarefas', 'Organize sua rotina e priorize o que importa'],
     clientes: ['Clientes & Campanhas', 'Monitore a saúde e o desempenho da sua carteira'],
+    calendario: ['Calendário', 'Organize reuniões e compromissos importantes'],
+  };
+
+  const primaryActionLabel = {
+    backlog: 'Nova Tarefa',
+    clientes: 'Novo Cliente',
+    calendario: 'Novo Evento',
   };
 
   function setTab(tab) {
@@ -407,12 +494,14 @@
     Object.entries(views).forEach(([k, el]) => el.classList.toggle('hidden', k !== tab));
     pageTitle.textContent = titles[tab][0];
     pageSubtitle.textContent = titles[tab][1];
-    primaryActionBtn.querySelector('span').textContent = tab === 'backlog' ? 'Nova Tarefa' : 'Novo Cliente';
+    primaryActionBtn.querySelector('span').textContent = primaryActionLabel[tab];
     closeSidebar();
   }
   navBtns.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
   primaryActionBtn.addEventListener('click', () => {
-    if (activeTab === 'backlog') openTaskModal(); else openClientModal();
+    if (activeTab === 'backlog') openTaskModal();
+    else if (activeTab === 'clientes') openClientModal();
+    else openEventModal();
   });
 
   // ---------- Sidebar (mobile) ----------
@@ -811,11 +900,170 @@
     renderTasks();
   });
 
+  // ================= CALENDAR =================
+  const calendarGrid = document.getElementById('calendarGrid');
+  const calendarAgenda = document.getElementById('calendarAgenda');
+  const calendarEmpty = document.getElementById('calendarEmpty');
+  const calMonthLabel = document.getElementById('calMonthLabel');
+  const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const MONTH_LABELS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  const today = new Date();
+  let calYear = today.getFullYear();
+  let calMonth = today.getMonth();
+
+  function toISODate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  const todayISO = toISODate(today);
+
+  function eventsOnDate(iso) {
+    return events.filter(ev => ev.date === iso).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+  }
+
+  function renderCalendar() {
+    calMonthLabel.textContent = `${MONTH_LABELS[calMonth]} ${calYear}`;
+
+    const firstOfMonth = new Date(calYear, calMonth, 1);
+    const gridStart = new Date(calYear, calMonth, 1 - firstOfMonth.getDay());
+
+    calendarGrid.innerHTML = '';
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(gridStart);
+      d.setDate(gridStart.getDate() + i);
+      const iso = toISODate(d);
+      const inMonth = d.getMonth() === calMonth;
+      const isToday = iso === todayISO;
+      const dayEvents = eventsOnDate(iso);
+      const visible = dayEvents.slice(0, 3);
+      const extra = dayEvents.length - visible.length;
+
+      const cell = document.createElement('div');
+      cell.className = `min-h-[100px] p-2 cursor-pointer hover:bg-white/[0.03] transition ${inMonth ? '' : 'opacity-40'}`;
+      cell.dataset.date = iso;
+      cell.innerHTML = `
+        <p class="text-xs font-semibold mb-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full ${isToday ? 'bg-accent text-white' : ''}">${d.getDate()}</p>
+        <div class="space-y-1">
+          ${visible.map(ev => `<div class="event-chip text-[11px] px-1.5 py-1 rounded-md bg-accent/15 text-accent-glow border border-accent/20 truncate" data-id="${ev.id}">${ev.time ? escapeHtml(ev.time) + ' · ' : ''}${escapeHtml(ev.title)}</div>`).join('')}
+          ${extra > 0 ? `<p class="text-[10px] text-muted">+${extra} mais</p>` : ''}
+        </div>
+      `;
+      calendarGrid.appendChild(cell);
+    }
+
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const daysWithEvents = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(calYear, calMonth, day);
+      const iso = toISODate(d);
+      const dayEvents = eventsOnDate(iso);
+      if (dayEvents.length) daysWithEvents.push({ d, iso, dayEvents });
+    }
+
+    calendarAgenda.innerHTML = '';
+    calendarEmpty.classList.toggle('hidden', daysWithEvents.length > 0);
+
+    daysWithEvents.forEach(({ d, iso, dayEvents }) => {
+      const isToday = iso === todayISO;
+      const box = document.createElement('div');
+      box.className = 'glass rounded-xl p-3';
+      box.innerHTML = `
+        <p class="text-xs font-semibold ${isToday ? 'text-accent-glow' : 'text-muted'} mb-2">${WEEKDAY_LABELS[d.getDay()]}, ${d.getDate()} de ${MONTH_LABELS[calMonth]}</p>
+        <div class="space-y-2">
+          ${dayEvents.map(ev => `
+            <div class="event-chip flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10" data-id="${ev.id}">
+              <span class="text-sm truncate">${escapeHtml(ev.title)}</span>
+              <span class="text-xs text-accent-glow shrink-0">${ev.time ? escapeHtml(ev.time) : ''}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      calendarAgenda.appendChild(box);
+    });
+  }
+
+  calendarGrid.addEventListener('click', (e) => {
+    const chip = e.target.closest('.event-chip');
+    if (chip) { openEventModal(chip.dataset.id); return; }
+    const cell = e.target.closest('[data-date]');
+    if (cell) openEventModal(null, cell.dataset.date);
+  });
+  calendarAgenda.addEventListener('click', (e) => {
+    const chip = e.target.closest('.event-chip');
+    if (chip) openEventModal(chip.dataset.id);
+  });
+
+  document.getElementById('calPrev').addEventListener('click', () => {
+    calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
+    renderCalendar();
+  });
+  document.getElementById('calNext').addEventListener('click', () => {
+    calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
+    renderCalendar();
+  });
+  document.getElementById('calToday').addEventListener('click', () => {
+    calYear = today.getFullYear();
+    calMonth = today.getMonth();
+    renderCalendar();
+  });
+
+  function openEventModal(id, dateHint) {
+    const form = document.getElementById('eventForm');
+    form.reset();
+    document.getElementById('eventId').value = '';
+    document.getElementById('eventModalTitle').textContent = 'Novo Evento';
+    document.getElementById('eventDeleteBtn').classList.add('hidden');
+    document.getElementById('eventDate').value = dateHint || todayISO;
+    if (id) {
+      const ev = events.find(x => x.id === id);
+      if (ev) {
+        document.getElementById('eventModalTitle').textContent = 'Editar Evento';
+        document.getElementById('eventId').value = ev.id;
+        document.getElementById('eventTitle').value = ev.title;
+        document.getElementById('eventDate').value = ev.date;
+        document.getElementById('eventTime').value = ev.time || '';
+        document.getElementById('eventDeleteBtn').classList.remove('hidden');
+      }
+    }
+    openModal('eventModal');
+  }
+
+  document.getElementById('eventDeleteBtn').addEventListener('click', () => {
+    const id = document.getElementById('eventId').value;
+    if (id && confirm('Excluir este evento?')) {
+      events = events.filter(x => x.id !== id);
+      save(EVENTS_KEY, events);
+      closeModal('eventModal');
+      renderCalendar();
+    }
+  });
+
+  document.getElementById('eventForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = document.getElementById('eventId').value;
+    const data = {
+      title: document.getElementById('eventTitle').value.trim(),
+      date: document.getElementById('eventDate').value,
+      time: document.getElementById('eventTime').value,
+    };
+    if (!data.title || !data.date) return;
+    if (id) {
+      const ev = events.find(x => x.id === id);
+      Object.assign(ev, data);
+    } else {
+      events.push({ id: crypto.randomUUID(), ...data });
+    }
+    save(EVENTS_KEY, events);
+    closeModal('eventModal');
+    renderCalendar();
+  });
+
   // ---------- Init ----------
   populateClientSelect();
   renderTasks();
   renderClients();
   renderMetrics();
+  renderCalendar();
 })();
 </script>
 </body>
