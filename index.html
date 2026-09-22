@@ -6,6 +6,8 @@
 <title>TAREFAS KAKS</title>
 <meta name="description" content="Painel de automação e gestão para analista de desempenho de marketing: backlog de tarefas e gestão de clientes/campanhas.">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -406,6 +408,24 @@
   const CLIENTS_KEY = 'hc_clients';
   const EVENTS_KEY = 'hc_events';
 
+  // ---------- Cloud sync (Firebase Firestore) ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyDftcAiklzuq1xcoXB03qqOfd2nWd8xW2Q",
+    authDomain: "campanhas-kaks.firebaseapp.com",
+    projectId: "campanhas-kaks",
+    storageBucket: "campanhas-kaks.firebasestorage.app",
+    messagingSenderId: "194444520071",
+    appId: "1:194444520071:web:34b46063e2aaa8b1272622",
+  };
+  let db = null;
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+  } catch (e) {
+    console.error('Firebase indisponível, usando apenas localStorage.', e);
+  }
+  const CLOUD_DOC = { hc_tasks: 'tasks', hc_clients: 'clients', hc_events: 'events' };
+
   const seedClients = () => ([
     { id: crypto.randomUUID(), name: 'Loja Nova Era', status: 'Saudável', stages: {
       lead: { projetado: 120, realizado: 132 }, invest: { projetado: 12500, realizado: 11800 },
@@ -467,6 +487,11 @@
 
   function save(key, data) {
     localStorage.setItem(key, JSON.stringify(data));
+    if (db && CLOUD_DOC[key]) {
+      db.collection('hc_data').doc(CLOUD_DOC[key]).set({ items: data }).catch(err => {
+        console.error('Falha ao sincronizar com a nuvem:', err);
+      });
+    }
   }
 
   function migrateLegacyClients(list) {
@@ -1200,12 +1225,39 @@
     backupFileInput.value = '';
   });
 
+  function renderAll() {
+    populateClientSelect();
+    renderTasks();
+    renderClients();
+    renderMetrics();
+    renderCalendar();
+  }
+
+  function setupCloudSync() {
+    if (!db) return;
+    const bindings = [
+      { key: TASKS_KEY, getLocal: () => tasks, setLocal: (v) => { tasks = v; } },
+      { key: CLIENTS_KEY, getLocal: () => clients, setLocal: (v) => { clients = migrateLegacyClients(v); } },
+      { key: EVENTS_KEY, getLocal: () => events, setLocal: (v) => { events = v; } },
+    ];
+    bindings.forEach(({ key, getLocal, setLocal }) => {
+      const docRef = db.collection('hc_data').doc(CLOUD_DOC[key]);
+      docRef.onSnapshot(snap => {
+        if (snap.exists) {
+          const items = snap.data().items || [];
+          setLocal(items);
+          localStorage.setItem(key, JSON.stringify(items));
+          renderAll();
+        } else {
+          docRef.set({ items: getLocal() }).catch(err => console.error('Falha ao inicializar a nuvem:', err));
+        }
+      }, err => console.error('Falha ao ouvir mudanças na nuvem:', err));
+    });
+  }
+
   // ---------- Init ----------
-  populateClientSelect();
-  renderTasks();
-  renderClients();
-  renderMetrics();
-  renderCalendar();
+  renderAll();
+  setupCloudSync();
 })();
 </script>
 </body>
