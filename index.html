@@ -153,8 +153,8 @@
             <p id="metricClientes" class="text-3xl font-extrabold">0</p>
           </div>
           <div class="glass rounded-2xl p-5 hover-glow">
-            <p class="text-xs text-muted font-medium mb-1">ROAS Médio da Carteira</p>
-            <p id="metricRoas" class="text-3xl font-extrabold text-accent-glow">0.0x</p>
+            <p class="text-xs text-muted font-medium mb-1">Atingimento Médio (Ganho)</p>
+            <p id="metricAtingimento" class="text-3xl font-extrabold text-accent-glow">0%</p>
           </div>
           <div class="glass rounded-2xl p-5 hover-glow">
             <p class="text-xs text-muted font-medium mb-1">Investimento Total Gerenciado</p>
@@ -169,27 +169,10 @@
           </div>
         </div>
 
-        <div class="glass rounded-2xl overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm min-w-[760px]">
-              <thead>
-                <tr class="text-left text-xs text-muted uppercase tracking-wide border-b border-white/5">
-                  <th class="px-5 py-3 font-semibold">Cliente</th>
-                  <th class="px-5 py-3 font-semibold">Status</th>
-                  <th class="px-5 py-3 font-semibold">Invest. Mensal</th>
-                  <th class="px-5 py-3 font-semibold">ROAS</th>
-                  <th class="px-5 py-3 font-semibold">CPA Médio</th>
-                  <th class="px-5 py-3 font-semibold">Canal Principal</th>
-                  <th class="px-5 py-3 font-semibold text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody id="clientTableBody"></tbody>
-            </table>
-          </div>
-          <div id="clientEmpty" class="hidden text-center py-16 text-muted">
-            <p class="text-lg font-semibold mb-1">Nenhum cliente cadastrado</p>
-            <p class="text-sm">Clique em "Novo Cliente" para começar.</p>
-          </div>
+        <div id="clientFunnelList" class="space-y-4"></div>
+        <div id="clientEmpty" class="hidden text-center py-16 text-muted glass rounded-2xl">
+          <p class="text-lg font-semibold mb-1">Nenhum cliente cadastrado</p>
+          <p class="text-sm">Clique em "Novo Cliente" para começar.</p>
         </div>
       </section>
 
@@ -271,30 +254,37 @@
           <option>Em Alerta</option>
         </select>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="text-xs font-medium text-muted block mb-1.5">Investimento Mensal (R$)</label>
-          <input id="clientInvest" type="number" min="0" step="0.01" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50" placeholder="0,00">
-        </div>
-        <div>
-          <label class="text-xs font-medium text-muted block mb-1.5">ROAS Atual</label>
-          <input id="clientRoas" type="number" min="0" step="0.01" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50" placeholder="0,0">
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="text-xs font-medium text-muted block mb-1.5">CPA Médio (R$)</label>
-          <input id="clientCpa" type="number" min="0" step="0.01" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50" placeholder="0,00">
-        </div>
-        <div>
-          <label class="text-xs font-medium text-muted block mb-1.5">Principal Canal</label>
-          <select id="clientChannel" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
-            <option>Meta Ads</option>
-            <option>Google Ads</option>
-            <option>TikTok Ads</option>
-            <option>LinkedIn Ads</option>
-            <option>Pinterest Ads</option>
-          </select>
+      <div class="pt-2">
+        <p class="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Funil de Metas</p>
+        <div class="space-y-3">
+          <div class="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-[11px] font-semibold text-muted uppercase tracking-wide px-1">
+            <span>Etapa</span><span class="w-20 text-center">Projetado</span><span class="w-20 text-center">Realizado</span>
+          </div>
+          <div class="grid grid-cols-[1fr_auto_auto] items-center gap-3">
+            <label class="text-sm">Novo Lead</label>
+            <input id="stageLeadProj" type="number" min="0" step="1" class="w-20 glass rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-accent/50" placeholder="0">
+            <input id="stageLeadReal" type="number" min="0" step="1" class="w-20 glass rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-accent/50" placeholder="0">
+          </div>
+          <div class="grid grid-cols-[1fr_auto_auto] items-center gap-3">
+            <label class="text-sm">Investimento (R$)</label>
+            <input id="stageInvestProj" type="number" min="0" step="0.01" class="w-20 glass rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-accent/50" placeholder="0">
+            <input id="stageInvestReal" type="number" min="0" step="0.01" class="w-20 glass rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-accent/50" placeholder="0">
+          </div>
+          <div class="grid grid-cols-[1fr_auto_auto] items-center gap-3">
+            <label class="text-sm">CPL (R$)</label>
+            <input id="stageCplProj" type="number" min="0" step="0.01" class="w-20 glass rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-accent/50" placeholder="0">
+            <input id="stageCplReal" type="number" min="0" step="0.01" class="w-20 glass rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-accent/50" placeholder="0">
+          </div>
+          <div class="grid grid-cols-[1fr_auto_auto] items-center gap-3">
+            <label class="text-sm">MQL = Qualificado</label>
+            <input id="stageMqlProj" type="number" min="0" step="1" class="w-20 glass rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-accent/50" placeholder="0">
+            <input id="stageMqlReal" type="number" min="0" step="1" class="w-20 glass rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-accent/50" placeholder="0">
+          </div>
+          <div class="grid grid-cols-[1fr_auto_auto] items-center gap-3">
+            <label class="text-sm">Ganho</label>
+            <input id="stageGanhoProj" type="number" min="0" step="1" class="w-20 glass rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-accent/50" placeholder="0">
+            <input id="stageGanhoReal" type="number" min="0" step="1" class="w-20 glass rounded-lg px-2 py-2 text-sm text-center outline-none focus:ring-2 focus:ring-accent/50" placeholder="0">
+          </div>
         </div>
       </div>
       <div class="flex gap-3 pt-2">
@@ -311,12 +301,30 @@
   const CLIENTS_KEY = 'hc_clients';
 
   const seedClients = () => ([
-    { id: crypto.randomUUID(), name: 'Loja Nova Era', status: 'Saudável', invest: 12500, roas: 5.8, cpa: 34.2, channel: 'Meta Ads' },
-    { id: crypto.randomUUID(), name: 'Studio Fit Academia', status: 'Atenção', invest: 6800, roas: 2.9, cpa: 61.5, channel: 'Google Ads' },
-    { id: crypto.randomUUID(), name: 'Bella Estética Avançada', status: 'Saudável', invest: 9400, roas: 4.6, cpa: 41.0, channel: 'Meta Ads' },
-    { id: crypto.randomUUID(), name: 'TechParts Distribuidora', status: 'Em Alerta', invest: 21000, roas: 1.4, cpa: 118.9, channel: 'Google Ads' },
-    { id: crypto.randomUUID(), name: 'Doce Sabor Confeitaria', status: 'Saudável', invest: 3200, roas: 6.7, cpa: 18.4, channel: 'TikTok Ads' },
-    { id: crypto.randomUUID(), name: 'ImobiPrime Imóveis', status: 'Atenção', invest: 15600, roas: 3.1, cpa: 89.2, channel: 'Google Ads' },
+    { id: crypto.randomUUID(), name: 'Loja Nova Era', status: 'Saudável', stages: {
+      lead: { projetado: 120, realizado: 132 }, invest: { projetado: 12500, realizado: 11800 },
+      cpl: { projetado: 104.2, realizado: 89.4 }, mql: { projetado: 60, realizado: 65 }, ganho: { projetado: 18, realizado: 21 },
+    } },
+    { id: crypto.randomUUID(), name: 'Studio Fit Academia', status: 'Atenção', stages: {
+      lead: { projetado: 80, realizado: 54 }, invest: { projetado: 6800, realizado: 6800 },
+      cpl: { projetado: 85, realizado: 125.9 }, mql: { projetado: 40, realizado: 22 }, ganho: { projetado: 10, realizado: 5 },
+    } },
+    { id: crypto.randomUUID(), name: 'Bella Estética Avançada', status: 'Saudável', stages: {
+      lead: { projetado: 95, realizado: 101 }, invest: { projetado: 9400, realizado: 8700 },
+      cpl: { projetado: 98.9, realizado: 86.1 }, mql: { projetado: 48, realizado: 50 }, ganho: { projetado: 14, realizado: 15 },
+    } },
+    { id: crypto.randomUUID(), name: 'TechParts Distribuidora', status: 'Em Alerta', stages: {
+      lead: { projetado: 150, realizado: 88 }, invest: { projetado: 21000, realizado: 19800 },
+      cpl: { projetado: 140, realizado: 225 }, mql: { projetado: 70, realizado: 30 }, ganho: { projetado: 20, realizado: 6 },
+    } },
+    { id: crypto.randomUUID(), name: 'Doce Sabor Confeitaria', status: 'Saudável', stages: {
+      lead: { projetado: 60, realizado: 78 }, invest: { projetado: 3200, realizado: 2900 },
+      cpl: { projetado: 53.3, realizado: 37.2 }, mql: { projetado: 30, realizado: 39 }, ganho: { projetado: 9, realizado: 13 },
+    } },
+    { id: crypto.randomUUID(), name: 'ImobiPrime Imóveis', status: 'Atenção', stages: {
+      lead: { projetado: 70, realizado: 52 }, invest: { projetado: 15600, realizado: 14200 },
+      cpl: { projetado: 222.9, realizado: 273 }, mql: { projetado: 35, realizado: 24 }, ganho: { projetado: 8, realizado: 5 },
+    } },
   ]);
 
   const seedTasks = (clients) => ([
@@ -573,52 +581,139 @@
   });
 
   // ================= CLIENTS =================
-  const clientTableBody = document.getElementById('clientTableBody');
+  const clientFunnelList = document.getElementById('clientFunnelList');
   const clientEmpty = document.getElementById('clientEmpty');
   const clientSearch = document.getElementById('clientSearch');
   let searchTerm = '';
 
+  const STAGE_META = [
+    { key: 'lead', label: 'Novo Lead', desc: '', unit: 'int', metric: 'atingimento',
+      icon: '<rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="16" rx="1"/>' },
+    { key: 'invest', label: 'Investimento', desc: '(verba x gasto real)', unit: 'currency', metric: 'consumo',
+      icon: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2Z"/>' },
+    { key: 'cpl', label: 'CPL', desc: '(Custo por Lead)', unit: 'currency', metric: 'variacao',
+      icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1.1 3 2.2c0 2.8-6 1.5-6 4.3 0 1.1 1.3 2 3 2s3-1.1 3-2.5"/>' },
+    { key: 'mql', label: 'MQL = Qualificado', desc: 'Lead qualificado pelo time de vendas', unit: 'int', metric: 'atingimento',
+      icon: '<polygon points="12 2 15 9 22 9.5 16.5 14 18.5 21 12 17 5.5 21 7.5 14 2 9.5 9 9"/>' },
+    { key: 'ganho', label: 'Ganho', desc: 'Lead convertido em venda', unit: 'int', metric: 'atingimento',
+      icon: '<path d="M8 21h8M12 17v4M17 5V3H7v2M5 5a4 4 0 0 0 4 4M19 5a4 4 0 0 1-4 4M7 5h10v3a5 5 0 0 1-10 0V5Z"/>' },
+  ];
+
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  function stageValue(unit, n) {
+    n = Number(n) || 0;
+    return unit === 'currency' ? fmtBRL(n) : n.toLocaleString('pt-BR');
+  }
+
+  function stageMetricInfo(stage, s) {
+    const proj = Number(s?.projetado) || 0;
+    const real = Number(s?.realizado) || 0;
+    const defaultLabel = stage.metric === 'consumo' ? 'Consumido' : stage.metric === 'variacao' ? 'Variação' : 'Atingimento';
+    if (!proj) return { label: defaultLabel, value: '—', cls: 'text-muted', pct: 0 };
+    if (stage.metric === 'variacao') {
+      const pct = ((real - proj) / proj) * 100;
+      const good = pct <= 0;
+      return { label: 'Variação', value: `${pct > 0 ? '+' : ''}${pct.toFixed(0)}%`, cls: good ? 'text-emerald-400' : 'text-red-400', pct: Math.min(Math.abs(pct), 100) };
+    }
+    const pct = (real / proj) * 100;
+    const cls = pct >= 90 ? 'text-emerald-400' : pct >= 60 ? 'text-amber-400' : 'text-red-400';
+    return { label: defaultLabel, value: `${pct.toFixed(0)}%`, cls, pct: Math.min(pct, 100) };
+  }
+
   function renderMetrics() {
     const activeCount = clients.length;
-    const avgRoas = activeCount ? clients.reduce((s, c) => s + (Number(c.roas) || 0), 0) / activeCount : 0;
-    const totalInvest = clients.reduce((s, c) => s + (Number(c.invest) || 0), 0);
+    const totalInvestProj = clients.reduce((s, c) => s + (Number(c.stages?.invest?.projetado) || 0), 0);
+    const ganhoClients = clients.filter(c => Number(c.stages?.ganho?.projetado) > 0);
+    const avgAtingimento = ganhoClients.length
+      ? ganhoClients.reduce((s, c) => s + (Number(c.stages.ganho.realizado) / Number(c.stages.ganho.projetado)) * 100, 0) / ganhoClients.length
+      : 0;
     document.getElementById('metricClientes').textContent = activeCount;
-    document.getElementById('metricRoas').textContent = avgRoas.toFixed(1) + 'x';
-    document.getElementById('metricInvest').textContent = fmtBRL(totalInvest);
+    document.getElementById('metricAtingimento').textContent = avgAtingimento.toFixed(0) + '%';
+    document.getElementById('metricInvest').textContent = fmtBRL(totalInvestProj);
   }
 
   function renderClients() {
     const filtered = clients.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    clientTableBody.innerHTML = '';
+    clientFunnelList.innerHTML = '';
     clientEmpty.classList.toggle('hidden', filtered.length > 0);
 
     filtered.forEach(c => {
-      const tr = document.createElement('tr');
-      tr.className = 'border-b border-white/5 last:border-0 hover:bg-white/[0.03] transition fade-in';
-      tr.innerHTML = `
-        <td class="px-5 py-4 font-semibold">${escapeHtml(c.name)}</td>
-        <td class="px-5 py-4">${healthBadge(c.status)}</td>
-        <td class="px-5 py-4 text-muted">${fmtBRL(c.invest)}</td>
-        <td class="px-5 py-4">
-          <span class="font-semibold ${Number(c.roas) >= 4 ? 'text-emerald-400' : Number(c.roas) >= 2 ? 'text-amber-400' : 'text-red-400'}">${(Number(c.roas) || 0).toFixed(1)}x</span>
-        </td>
-        <td class="px-5 py-4 text-muted">${fmtBRL(c.cpa)}</td>
-        <td class="px-5 py-4">
-          <span class="px-2.5 py-1 rounded-md text-xs font-semibold border bg-white/5 text-muted border-white/10">${escapeHtml(c.channel)}</span>
-        </td>
-        <td class="px-5 py-4">
-          <div class="flex gap-1 justify-end">
-            <button class="edit-client p-1.5 rounded-lg hover:bg-white/10 text-muted hover:text-white transition" title="Editar">
+      const card = document.createElement('div');
+      card.className = 'glass rounded-2xl overflow-hidden fade-in';
+
+      const stagesHtml = STAGE_META.map((stage, i) => {
+        const s = c.stages?.[stage.key] || { projetado: 0, realizado: 0 };
+        const info = stageMetricInfo(stage, s);
+        const showBar = stage.key === 'lead' || stage.key === 'invest';
+        return `
+          <div>
+            ${i > 0 ? `<div class="flex justify-center text-muted/50 py-1"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>` : ''}
+            <div class="glass rounded-xl p-4">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-accent-glow shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${stage.icon}</svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="font-semibold text-sm truncate">${stage.label}</p>
+                    ${stage.desc ? `<p class="text-xs text-muted truncate">${stage.desc}</p>` : ''}
+                  </div>
+                </div>
+                <div class="flex items-center gap-5 text-right">
+                  <div>
+                    <p class="text-[10px] text-muted uppercase tracking-wide">Projetado</p>
+                    <p class="text-sm font-semibold">${stageValue(stage.unit, s.projetado)}</p>
+                  </div>
+                  <div>
+                    <p class="text-[10px] text-muted uppercase tracking-wide">Realizado</p>
+                    <p class="text-sm font-semibold">${stageValue(stage.unit, s.realizado)}</p>
+                  </div>
+                  <div>
+                    <p class="text-[10px] text-muted uppercase tracking-wide">${info.label}</p>
+                    <p class="text-sm font-bold ${info.cls}">${info.value}</p>
+                  </div>
+                </div>
+              </div>
+              ${showBar ? `<div class="mt-3 h-1.5 rounded-full bg-white/5 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-accent to-accent-glow" style="width:${info.pct}%"></div></div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      card.innerHTML = `
+        <div class="client-header flex items-center justify-between gap-3 p-5 hover:bg-white/[0.03] transition cursor-pointer select-none">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-glow/30 to-accent/10 border border-white/10 flex items-center justify-center font-bold text-sm shrink-0">${escapeHtml(c.name.slice(0, 2).toUpperCase())}</div>
+            <p class="font-semibold truncate">${escapeHtml(c.name)}</p>
+            ${healthBadge(c.status)}
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" class="edit-client p-1.5 rounded-lg hover:bg-white/10 text-muted hover:text-white transition" title="Editar">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
             </button>
-            <button class="del-client p-1.5 rounded-lg hover:bg-red-500/15 text-muted hover:text-red-400 transition" title="Excluir">
+            <button type="button" class="del-client p-1.5 rounded-lg hover:bg-red-500/15 text-muted hover:text-red-400 transition" title="Excluir">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
+            <svg xmlns="http://www.w3.org/2000/svg" class="chevron w-4 h-4 text-muted transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
-        </td>
+        </div>
+        <div class="client-body hidden px-5 pb-5 space-y-1">${stagesHtml}</div>
       `;
-      tr.querySelector('.edit-client').addEventListener('click', () => openClientModal(c.id));
-      tr.querySelector('.del-client').addEventListener('click', () => {
+
+      const header = card.querySelector('.client-header');
+      const body = card.querySelector('.client-body');
+      const chevron = card.querySelector('.chevron');
+      header.addEventListener('click', () => {
+        body.classList.toggle('hidden');
+        chevron.classList.toggle('rotate-180');
+      });
+      card.querySelector('.edit-client').addEventListener('click', (e) => {
+        e.stopPropagation();
+        openClientModal(c.id);
+      });
+      card.querySelector('.del-client').addEventListener('click', (e) => {
+        e.stopPropagation();
         if (confirm(`Excluir o cliente "${c.name}"? Tarefas associadas manterão o vínculo antigo.`)) {
           clients = clients.filter(x => x.id !== c.id);
           save(CLIENTS_KEY, clients);
@@ -628,7 +723,8 @@
           renderTasks();
         }
       });
-      clientTableBody.appendChild(tr);
+
+      clientFunnelList.appendChild(card);
     });
   }
 
@@ -642,6 +738,10 @@
     form.reset();
     document.getElementById('clientId').value = '';
     document.getElementById('clientModalTitle').textContent = 'Novo Cliente';
+    STAGE_META.forEach(st => {
+      document.getElementById(`stage${cap(st.key)}Proj`).value = '';
+      document.getElementById(`stage${cap(st.key)}Real`).value = '';
+    });
     if (id) {
       const c = clients.find(x => x.id === id);
       if (c) {
@@ -649,10 +749,11 @@
         document.getElementById('clientId').value = c.id;
         document.getElementById('clientName').value = c.name;
         document.getElementById('clientStatus').value = c.status;
-        document.getElementById('clientInvest').value = c.invest;
-        document.getElementById('clientRoas').value = c.roas;
-        document.getElementById('clientCpa').value = c.cpa;
-        document.getElementById('clientChannel').value = c.channel;
+        STAGE_META.forEach(st => {
+          const s = c.stages?.[st.key] || {};
+          document.getElementById(`stage${cap(st.key)}Proj`).value = s.projetado ?? '';
+          document.getElementById(`stage${cap(st.key)}Real`).value = s.realizado ?? '';
+        });
       }
     }
     openModal('clientModal');
@@ -661,13 +762,17 @@
   document.getElementById('clientForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const id = document.getElementById('clientId').value;
+    const stages = {};
+    STAGE_META.forEach(st => {
+      stages[st.key] = {
+        projetado: parseFloat(document.getElementById(`stage${cap(st.key)}Proj`).value) || 0,
+        realizado: parseFloat(document.getElementById(`stage${cap(st.key)}Real`).value) || 0,
+      };
+    });
     const data = {
       name: document.getElementById('clientName').value.trim(),
       status: document.getElementById('clientStatus').value,
-      invest: parseFloat(document.getElementById('clientInvest').value) || 0,
-      roas: parseFloat(document.getElementById('clientRoas').value) || 0,
-      cpa: parseFloat(document.getElementById('clientCpa').value) || 0,
-      channel: document.getElementById('clientChannel').value,
+      stages,
     };
     if (!data.name) return;
     if (id) {
