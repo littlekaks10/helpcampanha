@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HelpCampanha | Painel de Automação</title>
+<meta name="description" content="Painel de automação e gestão para analista de desempenho de marketing: backlog de tarefas e gestão de clientes/campanhas.">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'sans-serif'] },
+        colors: {
+          base: '#0d0f12',
+          panel: '#161b22',
+          panel2: '#1a2130',
+          accent: {
+            DEFAULT: '#2563eb',
+            light: '#3b82f6',
+            glow: '#60a5fa',
+          },
+          muted: '#94a3b8',
+        },
+        boxShadow: {
+          glow: '0 0 0 1px rgba(96,165,250,0.15), 0 8px 30px -8px rgba(37,99,235,0.35)',
+          glowLg: '0 0 0 1px rgba(96,165,250,0.2), 0 20px 60px -12px rgba(37,99,235,0.45)',
+        },
+      },
+    },
+  };
+</script>
+<style>
+  * { scrollbar-width: thin; scrollbar-color: #2563eb33 transparent; }
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-thumb { background: #2563eb44; border-radius: 8px; }
+  body {
+    background: radial-gradient(1200px 600px at 10% -10%, rgba(37,99,235,0.15), transparent 60%),
+                radial-gradient(900px 500px at 100% 0%, rgba(96,165,250,0.10), transparent 55%),
+                #0d0f12;
+  }
+  .glass {
+    background: rgba(22, 27, 34, 0.6);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+  }
+  .glass-strong {
+    background: rgba(22, 27, 34, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+  }
+  .hover-glow {
+    transition: box-shadow .25s ease, border-color .25s ease, transform .2s ease;
+  }
+  .hover-glow:hover {
+    box-shadow: 0 0 0 1px rgba(96,165,250,0.25), 0 10px 30px -8px rgba(37,99,235,0.45);
+    border-color: rgba(96,165,250,0.35);
+    transform: translateY(-1px);
+  }
+  .fade-in { animation: fadeIn .25s ease both; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .modal-backdrop { background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); }
+  input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    color-scheme: dark;
+  }
+  .tab-active {
+    background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(59,130,246,0.08));
+    border: 1px solid rgba(96,165,250,0.35);
+    box-shadow: 0 0 0 1px rgba(96,165,250,0.15), 0 8px 24px -8px rgba(37,99,235,0.5);
+  }
+</style>
+</head>
+<body class="min-h-screen text-white font-sans antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed lg:static z-40 inset-y-0 left-0 w-72 -translate-x-full lg:translate-x-0 transition-transform duration-300 glass-strong flex flex-col p-5 gap-6 border-r border-white/5">
+    <div class="flex items-center gap-3 px-1">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-glow to-accent flex items-center justify-center shadow-glow shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8 12 14.7l-3.5-3.5L3 17.7"/></svg>
+      </div>
+      <div>
+        <p class="font-bold text-lg leading-tight">HelpCampanha</p>
+        <p class="text-xs text-muted leading-tight">Painel do Analista</p>
+      </div>
+    </div>
+
+    <nav class="flex flex-col gap-2">
+      <button data-tab="backlog" class="nav-btn tab-active flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover-glow">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-accent-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>
+        Backlog de Tarefas
+      </button>
+      <button data-tab="clientes" class="nav-btn flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-muted transition-all hover-glow border border-transparent">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clientes &amp; Campanhas
+      </button>
+    </nav>
+
+    <div class="mt-auto p-4 rounded-xl glass text-xs text-muted">
+      <p class="font-semibold text-white mb-1">Dados locais</p>
+      <p>Tudo é salvo automaticamente no seu navegador (localStorage). Nenhuma informação sai deste dispositivo.</p>
+    </div>
+  </aside>
+
+  <div id="overlay" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden"></div>
+
+  <!-- Main -->
+  <main class="flex-1 min-w-0">
+    <!-- Topbar -->
+    <header class="sticky top-0 z-20 glass-strong border-b border-white/5 px-4 sm:px-6 py-4 flex items-center gap-4">
+      <button id="menuBtn" class="lg:hidden p-2 rounded-lg glass hover-glow">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+      </button>
+      <div class="flex-1 min-w-0">
+        <h1 id="pageTitle" class="text-lg sm:text-xl font-bold truncate">Backlog de Tarefas</h1>
+        <p id="pageSubtitle" class="text-xs sm:text-sm text-muted truncate">Organize sua rotina e priorize o que importa</p>
+      </div>
+      <button id="primaryActionBtn" class="shrink-0 flex items-center gap-2 bg-gradient-to-br from-accent to-accent-light px-3 sm:px-4 py-2.5 rounded-xl text-sm font-semibold shadow-glow hover-glow">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span class="hidden sm:inline">Nova Tarefa</span>
+      </button>
+    </header>
+
+    <div class="p-4 sm:p-6">
+
+      <!-- ==================== ABA BACKLOG ==================== -->
+      <section id="view-backlog" class="fade-in">
+        <div class="flex flex-wrap gap-2 mb-5" id="taskFilters">
+          <button data-filter="todas" class="filter-btn tab-active px-4 py-2 rounded-lg text-sm font-medium">Todas</button>
+          <button data-filter="A Fazer" class="filter-btn px-4 py-2 rounded-lg text-sm font-medium text-muted glass hover-glow">A Fazer</button>
+          <button data-filter="Em Andamento" class="filter-btn px-4 py-2 rounded-lg text-sm font-medium text-muted glass hover-glow">Em Andamento</button>
+          <button data-filter="Concluído" class="filter-btn px-4 py-2 rounded-lg text-sm font-medium text-muted glass hover-glow">Concluídas</button>
+        </div>
+
+        <div id="taskList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+        <div id="taskEmpty" class="hidden text-center py-16 text-muted">
+          <p class="text-lg font-semibold mb-1">Nenhuma tarefa por aqui</p>
+          <p class="text-sm">Clique em "Nova Tarefa" para começar.</p>
+        </div>
+      </section>
+
+      <!-- ==================== ABA CLIENTES ==================== -->
+      <section id="view-clientes" class="fade-in hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div class="glass rounded-2xl p-5 hover-glow">
+            <p class="text-xs text-muted font-medium mb-1">Clientes Ativos</p>
+            <p id="metricClientes" class="text-3xl font-extrabold">0</p>
+          </div>
+          <div class="glass rounded-2xl p-5 hover-glow">
+            <p class="text-xs text-muted font-medium mb-1">ROAS Médio da Carteira</p>
+            <p id="metricRoas" class="text-3xl font-extrabold text-accent-glow">0.0x</p>
+          </div>
+          <div class="glass rounded-2xl p-5 hover-glow">
+            <p class="text-xs text-muted font-medium mb-1">Investimento Total Gerenciado</p>
+            <p id="metricInvest" class="text-3xl font-extrabold">R$ 0</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 mb-5">
+          <div class="relative flex-1 max-w-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="clientSearch" type="text" placeholder="Buscar cliente..." class="w-full glass rounded-lg pl-9 pr-3 py-2.5 text-sm placeholder-muted outline-none focus:ring-2 focus:ring-accent/50">
+          </div>
+        </div>
+
+        <div class="glass rounded-2xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm min-w-[760px]">
+              <thead>
+                <tr class="text-left text-xs text-muted uppercase tracking-wide border-b border-white/5">
+                  <th class="px-5 py-3 font-semibold">Cliente</th>
+                  <th class="px-5 py-3 font-semibold">Status</th>
+                  <th class="px-5 py-3 font-semibold">Invest. Mensal</th>
+                  <th class="px-5 py-3 font-semibold">ROAS</th>
+                  <th class="px-5 py-3 font-semibold">CPA Médio</th>
+                  <th class="px-5 py-3 font-semibold">Canal Principal</th>
+                  <th class="px-5 py-3 font-semibold text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="clientTableBody"></tbody>
+            </table>
+          </div>
+          <div id="clientEmpty" class="hidden text-center py-16 text-muted">
+            <p class="text-lg font-semibold mb-1">Nenhum cliente cadastrado</p>
+            <p class="text-sm">Clique em "Novo Cliente" para começar.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ==================== MODAL TAREFA ==================== -->
+<div id="taskModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-backdrop">
+  <div class="glass-strong rounded-2xl w-full max-w-lg p-6 shadow-glowLg fade-in">
+    <div class="flex items-center justify-between mb-5">
+      <h2 id="taskModalTitle" class="text-lg font-bold">Nova Tarefa</h2>
+      <button class="modal-close text-muted hover:text-white transition" data-modal="taskModal">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="taskForm" class="space-y-4">
+      <input type="hidden" id="taskId">
+      <div>
+        <label class="text-xs font-medium text-muted block mb-1.5">Título</label>
+        <input required id="taskTitle" type="text" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50" placeholder="Ex: Criar relatório mensal">
+      </div>
+      <div>
+        <label class="text-xs font-medium text-muted block mb-1.5">Cliente Associado</label>
+        <select id="taskClient" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+          <option value="">Sem cliente</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs font-medium text-muted block mb-1.5">Prioridade</label>
+          <select id="taskPriority" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+            <option>Baixa</option>
+            <option selected>Média</option>
+            <option>Alta</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-medium text-muted block mb-1.5">Status</label>
+          <select id="taskStatus" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+            <option>A Fazer</option>
+            <option>Em Andamento</option>
+            <option>Concluído</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-medium text-muted block mb-1.5">Data Limite</label>
+        <input id="taskDue" type="date" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" data-modal="taskModal" class="modal-close flex-1 px-4 py-2.5 rounded-lg glass hover-glow text-sm font-semibold">Cancelar</button>
+        <button type="submit" class="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-br from-accent to-accent-light text-sm font-semibold shadow-glow hover-glow">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==================== MODAL CLIENTE ==================== -->
+<div id="clientModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-backdrop">
+  <div class="glass-strong rounded-2xl w-full max-w-lg p-6 shadow-glowLg fade-in max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-5">
+      <h2 id="clientModalTitle" class="text-lg font-bold">Novo Cliente</h2>
+      <button class="modal-close text-muted hover:text-white transition" data-modal="clientModal">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="clientForm" class="space-y-4">
+      <input type="hidden" id="clientId">
+      <div>
+        <label class="text-xs font-medium text-muted block mb-1.5">Nome do Cliente</label>
+        <input required id="clientName" type="text" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50" placeholder="Ex: Loja Nova Era">
+      </div>
+      <div>
+        <label class="text-xs font-medium text-muted block mb-1.5">Status da Conta</label>
+        <select id="clientStatus" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+          <option>Saudável</option>
+          <option>Atenção</option>
+          <option>Em Alerta</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs font-medium text-muted block mb-1.5">Investimento Mensal (R$)</label>
+          <input id="clientInvest" type="number" min="0" step="0.01" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50" placeholder="0,00">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-muted block mb-1.5">ROAS Atual</label>
+          <input id="clientRoas" type="number" min="0" step="0.01" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50" placeholder="0,0">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs font-medium text-muted block mb-1.5">CPA Médio (R$)</label>
+          <input id="clientCpa" type="number" min="0" step="0.01" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50" placeholder="0,00">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-muted block mb-1.5">Principal Canal</label>
+          <select id="clientChannel" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+            <option>Meta Ads</option>
+            <option>Google Ads</option>
+            <option>TikTok Ads</option>
+            <option>LinkedIn Ads</option>
+            <option>Pinterest Ads</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" data-modal="clientModal" class="modal-close flex-1 px-4 py-2.5 rounded-lg glass hover-glow text-sm font-semibold">Cancelar</button>
+        <button type="submit" class="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-br from-accent to-accent-light text-sm font-semibold shadow-glow hover-glow">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(() => {
+  const TASKS_KEY = 'hc_tasks';
+  const CLIENTS_KEY = 'hc_clients';
+
+  const seedClients = () => ([
+    { id: crypto.randomUUID(), name: 'Loja Nova Era', status: 'Saudável', invest: 12500, roas: 5.8, cpa: 34.2, channel: 'Meta Ads' },
+    { id: crypto.randomUUID(), name: 'Studio Fit Academia', status: 'Atenção', invest: 6800, roas: 2.9, cpa: 61.5, channel: 'Google Ads' },
+    { id: crypto.randomUUID(), name: 'Bella Estética Avançada', status: 'Saudável', invest: 9400, roas: 4.6, cpa: 41.0, channel: 'Meta Ads' },
+    { id: crypto.randomUUID(), name: 'TechParts Distribuidora', status: 'Em Alerta', invest: 21000, roas: 1.4, cpa: 118.9, channel: 'Google Ads' },
+    { id: crypto.randomUUID(), name: 'Doce Sabor Confeitaria', status: 'Saudável', invest: 3200, roas: 6.7, cpa: 18.4, channel: 'TikTok Ads' },
+    { id: crypto.randomUUID(), name: 'ImobiPrime Imóveis', status: 'Atenção', invest: 15600, roas: 3.1, cpa: 89.2, channel: 'Google Ads' },
+  ]);
+
+  const seedTasks = (clients) => ([
+    { id: crypto.randomUUID(), title: 'Otimizar campanhas de Black Friday', client: clients[0]?.id || '', priority: 'Alta', status: 'Em Andamento', due: nextDays(2) },
+    { id: crypto.randomUUID(), title: 'Enviar relatório mensal de performance', client: clients[2]?.id || '', priority: 'Média', status: 'A Fazer', due: nextDays(5) },
+    { id: crypto.randomUUID(), title: 'Revisar públicos personalizados', client: clients[1]?.id || '', priority: 'Alta', status: 'A Fazer', due: nextDays(1) },
+    { id: crypto.randomUUID(), title: 'Auditar conta TechParts', client: clients[3]?.id || '', priority: 'Alta', status: 'A Fazer', due: nextDays(0) },
+    { id: crypto.randomUUID(), title: 'Criar novos criativos para TikTok', client: clients[4]?.id || '', priority: 'Baixa', status: 'Concluído', due: nextDays(-3) },
+    { id: crypto.randomUUID(), title: 'Reunião de alinhamento mensal', client: clients[5]?.id || '', priority: 'Média', status: 'Em Andamento', due: nextDays(3) },
+  ]);
+
+  function nextDays(n) {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return d.toISOString().split('T')[0];
+  }
+
+  function load(key, seedFn) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    const seeded = seedFn();
+    localStorage.setItem(key, JSON.stringify(seeded));
+    return seeded;
+  }
+
+  function save(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  let clients = load(CLIENTS_KEY, seedClients);
+  let tasks = load(TASKS_KEY, () => seedTasks(clients));
+
+  // ---------- Navigation ----------
+  const navBtns = document.querySelectorAll('.nav-btn');
+  const views = { backlog: document.getElementById('view-backlog'), clientes: document.getElementById('view-clientes') };
+  const pageTitle = document.getElementById('pageTitle');
+  const pageSubtitle = document.getElementById('pageSubtitle');
+  const primaryActionBtn = document.getElementById('primaryActionBtn');
+  let activeTab = 'backlog';
+
+  const titles = {
+    backlog: ['Backlog de Tarefas', 'Organize sua rotina e priorize o que importa'],
+    clientes: ['Clientes & Campanhas', 'Monitore a saúde e o desempenho da sua carteira'],
+  };
+
+  function setTab(tab) {
+    activeTab = tab;
+    navBtns.forEach(b => {
+      const on = b.dataset.tab === tab;
+      b.classList.toggle('tab-active', on);
+      b.classList.toggle('text-muted', !on);
+    });
+    Object.entries(views).forEach(([k, el]) => el.classList.toggle('hidden', k !== tab));
+    pageTitle.textContent = titles[tab][0];
+    pageSubtitle.textContent = titles[tab][1];
+    primaryActionBtn.querySelector('span').textContent = tab === 'backlog' ? 'Nova Tarefa' : 'Novo Cliente';
+    closeSidebar();
+  }
+  navBtns.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  primaryActionBtn.addEventListener('click', () => {
+    if (activeTab === 'backlog') openTaskModal(); else openClientModal();
+  });
+
+  // ---------- Sidebar (mobile) ----------
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+  document.getElementById('menuBtn').addEventListener('click', () => {
+    sidebar.classList.remove('-translate-x-full');
+    overlay.classList.remove('hidden');
+  });
+  function closeSidebar() {
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+  }
+  overlay.addEventListener('click', closeSidebar);
+
+  // ---------- Modals ----------
+  document.querySelectorAll('.modal-close').forEach(btn => {
+    btn.addEventListener('click', () => closeModal(btn.dataset.modal));
+  });
+  function openModal(id) {
+    const m = document.getElementById(id);
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+  }
+  function closeModal(id) {
+    const m = document.getElementById(id);
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+  }
+
+  // ---------- Priority / Status / Health badges ----------
+  const priorityBadge = (p) => {
+    const map = {
+      Alta: 'bg-red-500/15 text-red-400 border-red-500/30',
+      Média: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+      Baixa: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    };
+    return `<span class="px-2.5 py-1 rounded-md text-xs font-semibold border ${map[p]}">${p}</span>`;
+  };
+  const statusBadge = (s) => {
+    const map = {
+      'A Fazer': 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+      'Em Andamento': 'bg-accent/15 text-accent-glow border-accent/30',
+      'Concluído': 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    };
+    return `<span class="px-2.5 py-1 rounded-md text-xs font-semibold border ${map[s]}">${s}</span>`;
+  };
+  const healthBadge = (s) => {
+    const map = {
+      'Saudável': { cls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', dot: 'bg-emerald-400' },
+      'Atenção': { cls: 'bg-amber-500/15 text-amber-400 border-amber-500/30', dot: 'bg-amber-400' },
+      'Em Alerta': { cls: 'bg-red-500/15 text-red-400 border-red-500/30', dot: 'bg-red-400' },
+    };
+    const c = map[s] || map['Atenção'];
+    return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${c.cls}"><span class="w-1.5 h-1.5 rounded-full ${c.dot}"></span>${s}</span>`;
+  };
+
+  const fmtBRL = (n) => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtDate = (iso) => {
+    if (!iso) return '—';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  };
+  const isOverdue = (iso, status) => iso && status !== 'Concluído' && new Date(iso) < new Date(new Date().toDateString());
+
+  // ================= TASKS =================
+  const taskList = document.getElementById('taskList');
+  const taskEmpty = document.getElementById('taskEmpty');
+  const taskClientSelect = document.getElementById('taskClient');
+  let currentFilter = 'todas';
+
+  function populateClientSelect() {
+    taskClientSelect.innerHTML = '<option value="">Sem cliente</option>' +
+      clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str ?? '';
+    return d.innerHTML;
+  }
+
+  function clientName(id) {
+    const c = clients.find(c => c.id === id);
+    return c ? c.name : null;
+  }
+
+  function renderTasks() {
+    const filtered = currentFilter === 'todas' ? tasks : tasks.filter(t => t.status === currentFilter);
+    taskList.innerHTML = '';
+    taskEmpty.classList.toggle('hidden', filtered.length > 0);
+
+    filtered
+      .slice()
+      .sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'))
+      .forEach(t => {
+        const overdue = isOverdue(t.due, t.status);
+        const card = document.createElement('div');
+        card.className = 'glass rounded-2xl p-5 hover-glow fade-in flex flex-col gap-3';
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <h3 class="font-semibold text-sm leading-snug ${t.status === 'Concluído' ? 'line-through text-muted' : ''}">${escapeHtml(t.title)}</h3>
+            <div class="flex gap-1 shrink-0">
+              <button class="edit-task p-1.5 rounded-lg hover:bg-white/10 text-muted hover:text-white transition" title="Editar">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+              </button>
+              <button class="del-task p-1.5 rounded-lg hover:bg-red-500/15 text-muted hover:text-red-400 transition" title="Excluir">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+          ${clientName(t.client) ? `<p class="text-xs text-muted -mt-2">${escapeHtml(clientName(t.client))}</p>` : ''}
+          <div class="flex flex-wrap gap-2">${priorityBadge(t.priority)}${statusBadge(t.status)}</div>
+          <div class="flex items-center justify-between mt-1 pt-3 border-t border-white/5">
+            <span class="text-xs ${overdue ? 'text-red-400 font-semibold' : 'text-muted'}">${overdue ? '⚠ Atrasada · ' : ''}${fmtDate(t.due)}</span>
+            <label class="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
+              <input type="checkbox" class="toggle-done accent-accent w-4 h-4 rounded" ${t.status === 'Concluído' ? 'checked' : ''}>
+              Concluída
+            </label>
+          </div>
+        `;
+        card.querySelector('.edit-task').addEventListener('click', () => openTaskModal(t.id));
+        card.querySelector('.del-task').addEventListener('click', () => {
+          if (confirm('Excluir esta tarefa?')) {
+            tasks = tasks.filter(x => x.id !== t.id);
+            save(TASKS_KEY, tasks);
+            renderTasks();
+          }
+        });
+        card.querySelector('.toggle-done').addEventListener('change', (e) => {
+          t.status = e.target.checked ? 'Concluído' : 'A Fazer';
+          save(TASKS_KEY, tasks);
+          renderTasks();
+        });
+        taskList.appendChild(card);
+      });
+  }
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentFilter = btn.dataset.filter;
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.toggle('tab-active', b === btn);
+        b.classList.toggle('text-muted', b !== btn);
+      });
+      renderTasks();
+    });
+  });
+
+  function openTaskModal(id) {
+    populateClientSelect();
+    const form = document.getElementById('taskForm');
+    form.reset();
+    document.getElementById('taskId').value = '';
+    document.getElementById('taskModalTitle').textContent = 'Nova Tarefa';
+    if (id) {
+      const t = tasks.find(x => x.id === id);
+      if (t) {
+        document.getElementById('taskModalTitle').textContent = 'Editar Tarefa';
+        document.getElementById('taskId').value = t.id;
+        document.getElementById('taskTitle').value = t.title;
+        document.getElementById('taskClient').value = t.client || '';
+        document.getElementById('taskPriority').value = t.priority;
+        document.getElementById('taskStatus').value = t.status;
+        document.getElementById('taskDue').value = t.due || '';
+      }
+    }
+    openModal('taskModal');
+  }
+
+  document.getElementById('taskForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = document.getElementById('taskId').value;
+    const data = {
+      title: document.getElementById('taskTitle').value.trim(),
+      client: document.getElementById('taskClient').value,
+      priority: document.getElementById('taskPriority').value,
+      status: document.getElementById('taskStatus').value,
+      due: document.getElementById('taskDue').value,
+    };
+    if (!data.title) return;
+    if (id) {
+      const t = tasks.find(x => x.id === id);
+      Object.assign(t, data);
+    } else {
+      tasks.push({ id: crypto.randomUUID(), ...data });
+    }
+    save(TASKS_KEY, tasks);
+    closeModal('taskModal');
+    renderTasks();
+  });
+
+  // ================= CLIENTS =================
+  const clientTableBody = document.getElementById('clientTableBody');
+  const clientEmpty = document.getElementById('clientEmpty');
+  const clientSearch = document.getElementById('clientSearch');
+  let searchTerm = '';
+
+  function renderMetrics() {
+    const activeCount = clients.length;
+    const avgRoas = activeCount ? clients.reduce((s, c) => s + (Number(c.roas) || 0), 0) / activeCount : 0;
+    const totalInvest = clients.reduce((s, c) => s + (Number(c.invest) || 0), 0);
+    document.getElementById('metricClientes').textContent = activeCount;
+    document.getElementById('metricRoas').textContent = avgRoas.toFixed(1) + 'x';
+    document.getElementById('metricInvest').textContent = fmtBRL(totalInvest);
+  }
+
+  function renderClients() {
+    const filtered = clients.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    clientTableBody.innerHTML = '';
+    clientEmpty.classList.toggle('hidden', filtered.length > 0);
+
+    filtered.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-white/5 last:border-0 hover:bg-white/[0.03] transition fade-in';
+      tr.innerHTML = `
+        <td class="px-5 py-4 font-semibold">${escapeHtml(c.name)}</td>
+        <td class="px-5 py-4">${healthBadge(c.status)}</td>
+        <td class="px-5 py-4 text-muted">${fmtBRL(c.invest)}</td>
+        <td class="px-5 py-4">
+          <span class="font-semibold ${Number(c.roas) >= 4 ? 'text-emerald-400' : Number(c.roas) >= 2 ? 'text-amber-400' : 'text-red-400'}">${(Number(c.roas) || 0).toFixed(1)}x</span>
+        </td>
+        <td class="px-5 py-4 text-muted">${fmtBRL(c.cpa)}</td>
+        <td class="px-5 py-4">
+          <span class="px-2.5 py-1 rounded-md text-xs font-semibold border bg-white/5 text-muted border-white/10">${escapeHtml(c.channel)}</span>
+        </td>
+        <td class="px-5 py-4">
+          <div class="flex gap-1 justify-end">
+            <button class="edit-client p-1.5 rounded-lg hover:bg-white/10 text-muted hover:text-white transition" title="Editar">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+            </button>
+            <button class="del-client p-1.5 rounded-lg hover:bg-red-500/15 text-muted hover:text-red-400 transition" title="Excluir">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        </td>
+      `;
+      tr.querySelector('.edit-client').addEventListener('click', () => openClientModal(c.id));
+      tr.querySelector('.del-client').addEventListener('click', () => {
+        if (confirm(`Excluir o cliente "${c.name}"? Tarefas associadas manterão o vínculo antigo.`)) {
+          clients = clients.filter(x => x.id !== c.id);
+          save(CLIENTS_KEY, clients);
+          renderClients();
+          renderMetrics();
+          populateClientSelect();
+          renderTasks();
+        }
+      });
+      clientTableBody.appendChild(tr);
+    });
+  }
+
+  clientSearch.addEventListener('input', (e) => {
+    searchTerm = e.target.value;
+    renderClients();
+  });
+
+  function openClientModal(id) {
+    const form = document.getElementById('clientForm');
+    form.reset();
+    document.getElementById('clientId').value = '';
+    document.getElementById('clientModalTitle').textContent = 'Novo Cliente';
+    if (id) {
+      const c = clients.find(x => x.id === id);
+      if (c) {
+        document.getElementById('clientModalTitle').textContent = 'Editar Cliente';
+        document.getElementById('clientId').value = c.id;
+        document.getElementById('clientName').value = c.name;
+        document.getElementById('clientStatus').value = c.status;
+        document.getElementById('clientInvest').value = c.invest;
+        document.getElementById('clientRoas').value = c.roas;
+        document.getElementById('clientCpa').value = c.cpa;
+        document.getElementById('clientChannel').value = c.channel;
+      }
+    }
+    openModal('clientModal');
+  }
+
+  document.getElementById('clientForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = document.getElementById('clientId').value;
+    const data = {
+      name: document.getElementById('clientName').value.trim(),
+      status: document.getElementById('clientStatus').value,
+      invest: parseFloat(document.getElementById('clientInvest').value) || 0,
+      roas: parseFloat(document.getElementById('clientRoas').value) || 0,
+      cpa: parseFloat(document.getElementById('clientCpa').value) || 0,
+      channel: document.getElementById('clientChannel').value,
+    };
+    if (!data.name) return;
+    if (id) {
+      const c = clients.find(x => x.id === id);
+      Object.assign(c, data);
+    } else {
+      clients.push({ id: crypto.randomUUID(), ...data });
+    }
+    save(CLIENTS_KEY, clients);
+    closeModal('clientModal');
+    renderClients();
+    renderMetrics();
+    populateClientSelect();
+    renderTasks();
+  });
+
+  // ---------- Init ----------
+  populateClientSelect();
+  renderTasks();
+  renderClients();
+  renderMetrics();
+})();
+</script>
+</body>
+</html>
