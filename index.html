@@ -88,6 +88,11 @@
 </head>
 <body class="min-h-screen text-white font-sans antialiased">
 
+<div id="syncBanner" class="hidden fixed top-3 left-1/2 -translate-x-1/2 z-[60] items-center gap-2 px-4 py-2 rounded-full glass-strong text-xs font-medium shadow-glow">
+  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 animate-spin text-accent-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+  Sincronizando dados...
+</div>
+
 <div class="flex min-h-screen">
 
   <!-- Sidebar -->
@@ -409,6 +414,10 @@
           <input id="eventTime" type="time" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
         </div>
       </div>
+      <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+        <input id="eventDone" type="checkbox" class="accent-accent w-4 h-4 rounded">
+        Marcar como concluído
+      </label>
       <div class="flex gap-3 pt-2">
         <button type="button" id="eventDeleteBtn" class="hidden px-4 py-2.5 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30 text-sm font-semibold hover:bg-red-500/25 transition">Excluir</button>
         <button type="button" data-modal="eventModal" class="modal-close flex-1 px-4 py-2.5 rounded-lg glass hover-glow text-sm font-semibold">Cancelar</button>
@@ -441,6 +450,13 @@
     console.error('Firebase indisponível, usando apenas localStorage.', e);
   }
   const CLOUD_DOC = { hc_tasks: 'tasks', hc_clients: 'clients', hc_events: 'events' };
+  // Trava de segurança: enquanto o primeiro snapshot de cada coleção não chega,
+  // não deixamos nenhuma gravação local sobrescrever a nuvem (evita apagar dados
+  // reais com dados de cache/seed de um dispositivo novo que ainda não sincronizou).
+  const cloudReady = { hc_tasks: !db, hc_clients: !db, hc_events: !db };
+  function allCloudReady() {
+    return Object.values(cloudReady).every(Boolean);
+  }
 
   const seedClients = () => ([
     { id: crypto.randomUUID(), name: 'Loja Nova Era', status: 'Saudável', stages: {
@@ -503,7 +519,7 @@
 
   function save(key, data) {
     localStorage.setItem(key, JSON.stringify(data));
-    if (db && CLOUD_DOC[key]) {
+    if (db && CLOUD_DOC[key] && cloudReady[key]) {
       db.collection('hc_data').doc(CLOUD_DOC[key]).set({ items: data }).catch(err => {
         console.error('Falha ao sincronizar com a nuvem:', err);
       });
@@ -719,9 +735,15 @@
         const card = document.createElement('div');
         card.className = 'task-card glass rounded-2xl p-4 hover-glow fade-in flex flex-col gap-3 cursor-grab active:cursor-grabbing';
         card.draggable = true;
+        const done = t.status === 'Concluído';
         card.innerHTML = `
           <div class="flex items-start justify-between gap-2">
-            <h3 class="font-semibold text-sm leading-snug">${escapeHtml(t.title)}</h3>
+            <div class="flex items-start gap-2 min-w-0">
+              <button type="button" class="toggle-done shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center transition ${done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/25 hover:border-accent-glow'}" title="${done ? 'Marcar como não concluída' : 'Marcar como concluída'}">
+                ${done ? '<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+              </button>
+              <h3 class="font-semibold text-sm leading-snug ${done ? 'line-through text-muted' : ''}">${escapeHtml(t.title)}</h3>
+            </div>
             <div class="flex gap-1 shrink-0">
               <button class="edit-task p-1.5 rounded-lg hover:bg-white/10 text-muted hover:text-white transition" title="Editar">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
@@ -735,6 +757,11 @@
           <div class="flex flex-wrap gap-2">${priorityBadge(t.priority)}</div>
           <p class="text-xs ${overdue ? 'text-red-400 font-semibold' : 'text-muted'}">${overdue ? '⚠ Atrasada · ' : ''}${fmtDate(t.due)}</p>
         `;
+        card.querySelector('.toggle-done').addEventListener('click', () => {
+          t.status = done ? 'A Fazer' : 'Concluído';
+          save(TASKS_KEY, tasks);
+          renderTasks();
+        });
         card.querySelector('.edit-task').addEventListener('click', () => openTaskModal(t.id));
         card.querySelector('.del-task').addEventListener('click', () => {
           if (confirm('Excluir esta tarefa?')) {
@@ -1048,6 +1075,33 @@
     return events.filter(ev => ev.date === iso).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
   }
 
+  function isEventOverdue(ev) {
+    return !ev.done && ev.date < todayISO;
+  }
+
+  function buildEventRow(ev) {
+    const overdueEv = isEventOverdue(ev);
+    const row = document.createElement('div');
+    row.className = `flex items-start gap-2 px-3 py-2.5 rounded-lg border transition ${ev.done ? 'bg-white/[0.03] border-white/10' : overdueEv ? 'bg-red-500/10 border-red-500/25' : 'bg-white/5 border-white/10 hover:bg-white/10'}`;
+    row.innerHTML = `
+      <button type="button" class="toggle-event-done shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center transition ${ev.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/25 hover:border-accent-glow'}" title="${ev.done ? 'Marcar como não concluído' : 'Marcar como concluído'}">
+        ${ev.done ? '<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+      </button>
+      <div class="event-chip min-w-0 flex-1 cursor-pointer" data-id="${ev.id}">
+        <p class="text-sm font-medium truncate ${ev.done ? 'line-through text-muted' : ''}">${escapeHtml(ev.title)}</p>
+        <p class="text-xs ${overdueEv ? 'text-red-400 font-semibold' : 'text-accent-glow'}">${overdueEv ? '⚠ Atrasado' + (ev.time ? ' · ' : '') : ''}${ev.time ? escapeHtml(ev.time) : ''}</p>
+      </div>
+    `;
+    row.querySelector('.toggle-event-done').addEventListener('click', (e) => {
+      e.stopPropagation();
+      ev.done = !ev.done;
+      save(EVENTS_KEY, events);
+      renderCalendar();
+    });
+    row.querySelector('.event-chip').addEventListener('click', () => openEventModal(ev.id));
+    return row;
+  }
+
   function renderCalendar() {
     calMonthLabel.textContent = `${MONTH_LABELS[calMonth]} ${calYear}`;
 
@@ -1072,7 +1126,15 @@
       cell.innerHTML = `
         <p class="text-xs font-semibold mb-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full ${isToday ? 'bg-accent text-white' : ''}">${d.getDate()}</p>
         <div class="space-y-1">
-          ${visible.map(ev => `<div class="event-chip text-[11px] px-1.5 py-1 rounded-md bg-accent/15 text-accent-glow border border-accent/20 truncate" data-id="${ev.id}">${ev.time ? escapeHtml(ev.time) + ' · ' : ''}${escapeHtml(ev.title)}</div>`).join('')}
+          ${visible.map(ev => {
+            const overdueEv = isEventOverdue(ev);
+            const chipCls = ev.done
+              ? 'bg-white/5 text-muted border-white/10 line-through'
+              : overdueEv
+                ? 'bg-red-500/15 text-red-400 border-red-500/30'
+                : 'bg-accent/15 text-accent-glow border-accent/20';
+            return `<div class="event-chip text-[11px] px-1.5 py-1 rounded-md border truncate ${chipCls}" data-id="${ev.id}">${ev.time ? escapeHtml(ev.time) + ' · ' : ''}${escapeHtml(ev.title)}</div>`;
+          }).join('')}
           ${extra > 0 ? `<p class="text-[10px] text-muted">+${extra} mais</p>` : ''}
         </div>
       `;
@@ -1097,15 +1159,10 @@
       box.className = 'glass rounded-xl p-3';
       box.innerHTML = `
         <p class="text-xs font-semibold ${isToday ? 'text-accent-glow' : 'text-muted'} mb-2">${WEEKDAY_LABELS[d.getDay()]}, ${d.getDate()} de ${MONTH_LABELS[calMonth]}</p>
-        <div class="space-y-2">
-          ${dayEvents.map(ev => `
-            <div class="event-chip flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10" data-id="${ev.id}">
-              <span class="text-sm truncate">${escapeHtml(ev.title)}</span>
-              <span class="text-xs text-accent-glow shrink-0">${ev.time ? escapeHtml(ev.time) : ''}</span>
-            </div>
-          `).join('')}
-        </div>
+        <div class="space-y-2" data-agenda-day></div>
       `;
+      const dayList = box.querySelector('[data-agenda-day]');
+      dayEvents.forEach(ev => dayList.appendChild(buildEventRow(ev)));
       calendarAgenda.appendChild(box);
     });
 
@@ -1123,17 +1180,7 @@
     list.innerHTML = '';
     dayPanelEmpty.classList.toggle('hidden', dayEvents.length > 0);
 
-    dayEvents.forEach(ev => {
-      const row = document.createElement('div');
-      row.className = 'event-chip px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition';
-      row.dataset.id = ev.id;
-      row.innerHTML = `
-        <p class="text-sm font-medium truncate">${escapeHtml(ev.title)}</p>
-        ${ev.time ? `<p class="text-xs text-accent-glow">${escapeHtml(ev.time)}</p>` : ''}
-      `;
-      row.addEventListener('click', () => openEventModal(ev.id));
-      list.appendChild(row);
-    });
+    dayEvents.forEach(ev => list.appendChild(buildEventRow(ev)));
   }
 
   document.getElementById('dayPanelAddBtn').addEventListener('click', () => openEventModal(null, selectedDate));
@@ -1146,10 +1193,6 @@
       selectedDate = cell.dataset.date;
       renderCalendar();
     }
-  });
-  calendarAgenda.addEventListener('click', (e) => {
-    const chip = e.target.closest('.event-chip');
-    if (chip) openEventModal(chip.dataset.id);
   });
 
   document.getElementById('calPrev').addEventListener('click', () => {
@@ -1182,6 +1225,7 @@
         document.getElementById('eventTitle').value = ev.title;
         document.getElementById('eventDate').value = ev.date;
         document.getElementById('eventTime').value = ev.time || '';
+        document.getElementById('eventDone').checked = !!ev.done;
         document.getElementById('eventDeleteBtn').classList.remove('hidden');
       }
     }
@@ -1205,6 +1249,7 @@
       title: document.getElementById('eventTitle').value.trim(),
       date: document.getElementById('eventDate').value,
       time: document.getElementById('eventTime').value,
+      done: document.getElementById('eventDone').checked,
     };
     if (!data.title || !data.date) return;
     if (id) {
@@ -1284,8 +1329,17 @@
     renderCalendar();
   }
 
+  function updateSyncBanner() {
+    const banner = document.getElementById('syncBanner');
+    if (!banner) return;
+    const ready = allCloudReady();
+    banner.classList.toggle('hidden', ready);
+    banner.classList.toggle('flex', !ready);
+  }
+
   function setupCloudSync() {
     if (!db) return;
+    updateSyncBanner();
     const bindings = [
       { key: TASKS_KEY, getLocal: () => tasks, setLocal: (v) => { tasks = v; } },
       { key: CLIENTS_KEY, getLocal: () => clients, setLocal: (v) => { clients = migrateLegacyClients(v); } },
@@ -1299,10 +1353,18 @@
           setLocal(items);
           localStorage.setItem(key, JSON.stringify(items));
           renderAll();
-        } else {
+        } else if (!cloudReady[key]) {
+          // Primeira vez que este banco é usado: a nuvem está genuinamente vazia,
+          // então semeamos com o que já temos localmente (só acontece uma vez).
           docRef.set({ items: getLocal() }).catch(err => console.error('Falha ao inicializar a nuvem:', err));
         }
-      }, err => console.error('Falha ao ouvir mudanças na nuvem:', err));
+        cloudReady[key] = true;
+        updateSyncBanner();
+      }, err => {
+        console.error('Falha ao ouvir mudanças na nuvem:', err);
+        cloudReady[key] = true;
+        updateSyncBanner();
+      });
     });
   }
 
