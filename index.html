@@ -414,6 +414,10 @@
           <input id="eventTime" type="time" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
         </div>
       </div>
+      <div>
+        <label class="text-xs font-medium text-muted block mb-1.5">Observação</label>
+        <textarea id="eventNotes" rows="3" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50 resize-none" placeholder="Detalhes, pauta, lembretes..."></textarea>
+      </div>
       <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
         <input id="eventDone" type="checkbox" class="accent-accent w-4 h-4 rounded">
         Marcar como concluído
@@ -1090,6 +1094,7 @@
       <div class="event-chip min-w-0 flex-1 cursor-pointer" data-id="${ev.id}">
         <p class="text-sm font-medium truncate ${ev.done ? 'line-through text-muted' : ''}">${escapeHtml(ev.title)}</p>
         <p class="text-xs ${overdueEv ? 'text-red-400 font-semibold' : 'text-accent-glow'}">${overdueEv ? '⚠ Atrasado' + (ev.time ? ' · ' : '') : ''}${ev.time ? escapeHtml(ev.time) : ''}</p>
+        ${ev.notes ? `<p class="text-xs text-muted truncate mt-0.5">${escapeHtml(ev.notes)}</p>` : ''}
       </div>
     `;
     row.querySelector('.toggle-event-done').addEventListener('click', (e) => {
@@ -1225,6 +1230,7 @@
         document.getElementById('eventTitle').value = ev.title;
         document.getElementById('eventDate').value = ev.date;
         document.getElementById('eventTime').value = ev.time || '';
+        document.getElementById('eventNotes').value = ev.notes || '';
         document.getElementById('eventDone').checked = !!ev.done;
         document.getElementById('eventDeleteBtn').classList.remove('hidden');
       }
@@ -1249,6 +1255,7 @@
       title: document.getElementById('eventTitle').value.trim(),
       date: document.getElementById('eventDate').value,
       time: document.getElementById('eventTime').value,
+      notes: document.getElementById('eventNotes').value.trim(),
       done: document.getElementById('eventDone').checked,
     };
     if (!data.title || !data.date) return;
