@@ -108,20 +108,20 @@
     </div>
 
     <nav id="navList" class="flex flex-col gap-2">
-      <button data-tab="backlog" draggable="true" class="nav-btn tab-active flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover-glow cursor-grab active:cursor-grabbing">
+      <button data-tab="calendario" draggable="true" class="nav-btn flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-muted transition-all hover-glow border border-transparent cursor-grab active:cursor-grabbing">
         <svg xmlns="http://www.w3.org/2000/svg" class="drag-handle w-3.5 h-3.5 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-accent-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>
-        Backlog de Tarefas
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendário
       </button>
       <button data-tab="clientes" draggable="true" class="nav-btn flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-muted transition-all hover-glow border border-transparent cursor-grab active:cursor-grabbing">
         <svg xmlns="http://www.w3.org/2000/svg" class="drag-handle w-3.5 h-3.5 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Clientes &amp; Campanhas
       </button>
-      <button data-tab="calendario" draggable="true" class="nav-btn flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-muted transition-all hover-glow border border-transparent cursor-grab active:cursor-grabbing">
+      <button data-tab="backlog" draggable="true" class="nav-btn tab-active flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover-glow cursor-grab active:cursor-grabbing">
         <svg xmlns="http://www.w3.org/2000/svg" class="drag-handle w-3.5 h-3.5 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Calendário
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-accent-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>
+        Backlog de Tarefas
       </button>
     </nav>
 
@@ -248,7 +248,7 @@
             <div id="calendarGrid" class="grid grid-cols-7 divide-x divide-y divide-white/5"></div>
           </div>
 
-          <div id="dayPanel" class="hidden lg:flex flex-col w-72 shrink-0 glass rounded-2xl p-4 self-stretch">
+          <div id="dayPanel" class="hidden md:flex flex-col w-60 lg:w-72 shrink-0 glass rounded-2xl p-4 self-stretch">
             <div class="flex items-center justify-between mb-3 gap-2">
               <div class="min-w-0">
                 <p id="dayPanelWeekday" class="text-xs text-muted truncate"></p>
