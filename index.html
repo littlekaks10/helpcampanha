@@ -161,6 +161,14 @@
 
       <!-- ==================== ABA BACKLOG ==================== -->
       <section id="view-backlog" class="fade-in">
+        <div id="recurringSection" class="hidden mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold">Tarefas Recorrentes</h3>
+            <span id="recurringProgress" class="text-xs text-muted"></span>
+          </div>
+          <div id="recurringList" class="space-y-2"></div>
+        </div>
+
         <p class="text-xs text-muted mb-4">Arraste os cards entre as colunas para mudar o status.</p>
         <div class="flex gap-4 overflow-x-auto pb-2" id="kanbanBoard">
           <div class="flex flex-col flex-1 min-w-[280px]">
@@ -295,15 +303,20 @@
           <option value="">Sem cliente</option>
         </select>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="text-xs font-medium text-muted block mb-1.5">Prioridade</label>
-          <select id="taskPriority" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
-            <option>Baixa</option>
-            <option selected>Média</option>
-            <option>Alta</option>
-          </select>
-        </div>
+      <div>
+        <label class="text-xs font-medium text-muted block mb-1.5">Prioridade</label>
+        <select id="taskPriority" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+          <option>Baixa</option>
+          <option selected>Média</option>
+          <option>Alta</option>
+        </select>
+      </div>
+      <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+        <input id="taskRecurring" type="checkbox" class="accent-accent w-4 h-4 rounded">
+        Tarefa recorrente (repete em dias da semana)
+      </label>
+      <div id="taskRecurDaysWrap" class="hidden flex-wrap gap-2"></div>
+      <div id="taskNormalFieldsWrap" class="space-y-4">
         <div>
           <label class="text-xs font-medium text-muted block mb-1.5">Status</label>
           <select id="taskStatus" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
@@ -312,10 +325,10 @@
             <option>Concluído</option>
           </select>
         </div>
-      </div>
-      <div>
-        <label class="text-xs font-medium text-muted block mb-1.5">Data Limite</label>
-        <input id="taskDue" type="date" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+        <div>
+          <label class="text-xs font-medium text-muted block mb-1.5">Data Limite</label>
+          <input id="taskDue" type="date" class="w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/50">
+        </div>
       </div>
       <div class="flex gap-3 pt-2">
         <button type="button" data-modal="taskModal" class="modal-close flex-1 px-4 py-2.5 rounded-lg glass hover-glow text-sm font-semibold">Cancelar</button>
@@ -708,6 +721,35 @@
   const taskEmpty = document.getElementById('taskEmpty');
   const taskClientSelect = document.getElementById('taskClient');
   const TASK_STATUSES = ['A Fazer', 'Em Andamento', 'Concluído'];
+  const RECUR_DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+  const isRecurring = (t) => Array.isArray(t.recurDays) && t.recurDays.length > 0;
+
+  let selectedRecurDays = new Set();
+  const taskRecurring = document.getElementById('taskRecurring');
+  const taskRecurDaysWrap = document.getElementById('taskRecurDaysWrap');
+  const taskNormalFieldsWrap = document.getElementById('taskNormalFieldsWrap');
+
+  function renderRecurDayButtons() {
+    taskRecurDaysWrap.innerHTML = RECUR_DAY_LABELS.map((label, i) => `
+      <button type="button" data-day="${i}" class="recur-day-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${selectedRecurDays.has(i) ? 'bg-accent/20 border-accent/40 text-accent-glow' : 'glass text-muted hover:text-white'}">${label}</button>
+    `).join('');
+    taskRecurDaysWrap.querySelectorAll('.recur-day-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const day = Number(btn.dataset.day);
+        if (selectedRecurDays.has(day)) selectedRecurDays.delete(day); else selectedRecurDays.add(day);
+        renderRecurDayButtons();
+      });
+    });
+  }
+
+  function updateTaskModalMode() {
+    const on = taskRecurring.checked;
+    taskRecurDaysWrap.classList.toggle('hidden', !on);
+    taskRecurDaysWrap.classList.toggle('flex', on);
+    taskNormalFieldsWrap.classList.toggle('hidden', on);
+  }
+  taskRecurring.addEventListener('change', updateTaskModalMode);
 
   function populateClientSelect() {
     taskClientSelect.innerHTML = '<option value="">Sem cliente</option>' +
@@ -726,11 +768,12 @@
   }
 
   function renderTasks() {
-    taskEmpty.classList.toggle('hidden', tasks.length > 0);
+    const kanbanTasks = tasks.filter(t => !isRecurring(t));
+    taskEmpty.classList.toggle('hidden', kanbanTasks.length > 0);
 
     TASK_STATUSES.forEach(status => {
       const drop = document.querySelector(`.kanban-drop[data-status="${status}"]`);
-      const list = tasks.filter(t => t.status === status).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
+      const list = kanbanTasks.filter(t => t.status === status).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
       document.querySelector(`[data-count="${CSS.escape(status)}"]`).textContent = list.length;
       drop.innerHTML = '';
 
@@ -783,6 +826,75 @@
         drop.appendChild(card);
       });
     });
+
+    renderRecurringTasks();
+  }
+
+  function renderRecurringTasks() {
+    const section = document.getElementById('recurringSection');
+    const list = document.getElementById('recurringList');
+    const progress = document.getElementById('recurringProgress');
+    const recurTasks = tasks.filter(isRecurring);
+
+    section.classList.toggle('hidden', recurTasks.length === 0);
+    if (recurTasks.length === 0) return;
+
+    const todayWeekday = new Date().getDay();
+    const todayScheduled = recurTasks.filter(t => t.recurDays.includes(todayWeekday));
+    const doneCount = todayScheduled.filter(t => (t.completedDates || []).includes(todayISO)).length;
+    progress.textContent = todayScheduled.length ? `${doneCount}/${todayScheduled.length} feitas hoje` : '';
+
+    const sorted = recurTasks.slice().sort((a, b) => {
+      const aToday = a.recurDays.includes(todayWeekday) ? 0 : 1;
+      const bToday = b.recurDays.includes(todayWeekday) ? 0 : 1;
+      return aToday - bToday || a.title.localeCompare(b.title);
+    });
+
+    list.innerHTML = '';
+    sorted.forEach(t => {
+      const scheduledToday = t.recurDays.includes(todayWeekday);
+      const doneToday = (t.completedDates || []).includes(todayISO);
+      const row = document.createElement('div');
+      row.className = `flex items-start gap-3 p-3 rounded-xl glass hover-glow transition ${!scheduledToday ? 'opacity-50' : ''}`;
+      row.innerHTML = `
+        <button type="button" class="recur-toggle shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center transition ${doneToday ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/25 hover:border-accent-glow'}" ${scheduledToday ? '' : 'disabled'} title="${scheduledToday ? (doneToday ? 'Marcar como não feita hoje' : 'Marcar como feita hoje') : 'Não agendada para hoje'}">
+          ${doneToday ? '<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        </button>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium leading-snug ${doneToday ? 'line-through text-muted' : ''}">${escapeHtml(t.title)}</p>
+          ${clientName(t.client) ? `<p class="text-xs text-muted">${escapeHtml(clientName(t.client))}</p>` : ''}
+          <div class="flex gap-1 mt-1.5">
+            ${RECUR_DAY_LABELS.map((label, i) => `<span class="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold ${t.recurDays.includes(i) ? (i === todayWeekday ? 'bg-accent text-white' : 'bg-accent/15 text-accent-glow') : 'text-muted/30'}">${label[0]}</span>`).join('')}
+          </div>
+        </div>
+        <div class="flex gap-1 shrink-0">
+          <button class="edit-recur p-1.5 rounded-lg hover:bg-white/10 text-muted hover:text-white transition" title="Editar">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+          </button>
+          <button class="del-recur p-1.5 rounded-lg hover:bg-red-500/15 text-muted hover:text-red-400 transition" title="Excluir">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      `;
+      if (scheduledToday) {
+        row.querySelector('.recur-toggle').addEventListener('click', () => {
+          const dates = new Set(t.completedDates || []);
+          if (dates.has(todayISO)) dates.delete(todayISO); else dates.add(todayISO);
+          t.completedDates = [...dates];
+          save(TASKS_KEY, tasks);
+          renderTasks();
+        });
+      }
+      row.querySelector('.edit-recur').addEventListener('click', () => openTaskModal(t.id));
+      row.querySelector('.del-recur').addEventListener('click', () => {
+        if (confirm('Excluir esta tarefa recorrente?')) {
+          tasks = tasks.filter(x => x.id !== t.id);
+          save(TASKS_KEY, tasks);
+          renderTasks();
+        }
+      });
+      list.appendChild(row);
+    });
   }
 
   document.querySelectorAll('.kanban-drop').forEach(zone => {
@@ -810,6 +922,7 @@
     form.reset();
     document.getElementById('taskId').value = '';
     document.getElementById('taskModalTitle').textContent = 'Nova Tarefa';
+    selectedRecurDays = new Set();
     if (id) {
       const t = tasks.find(x => x.id === id);
       if (t) {
@@ -818,29 +931,50 @@
         document.getElementById('taskTitle').value = t.title;
         document.getElementById('taskClient').value = t.client || '';
         document.getElementById('taskPriority').value = t.priority;
-        document.getElementById('taskStatus').value = t.status;
-        document.getElementById('taskDue').value = t.due || '';
+        if (isRecurring(t)) {
+          taskRecurring.checked = true;
+          selectedRecurDays = new Set(t.recurDays);
+        } else {
+          taskRecurring.checked = false;
+          document.getElementById('taskStatus').value = t.status;
+          document.getElementById('taskDue').value = t.due || '';
+        }
       }
     }
+    renderRecurDayButtons();
+    updateTaskModalMode();
     openModal('taskModal');
   }
 
   document.getElementById('taskForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const id = document.getElementById('taskId').value;
+    const recurring = taskRecurring.checked;
+    if (recurring && selectedRecurDays.size === 0) {
+      alert('Selecione ao menos um dia da semana para a tarefa recorrente.');
+      return;
+    }
     const data = {
       title: document.getElementById('taskTitle').value.trim(),
       client: document.getElementById('taskClient').value,
       priority: document.getElementById('taskPriority').value,
-      status: document.getElementById('taskStatus').value,
-      due: document.getElementById('taskDue').value,
     };
+    if (recurring) {
+      data.recurDays = [...selectedRecurDays].sort();
+      data.status = null;
+      data.due = null;
+    } else {
+      data.recurDays = [];
+      data.status = document.getElementById('taskStatus').value;
+      data.due = document.getElementById('taskDue').value;
+    }
     if (!data.title) return;
     if (id) {
       const t = tasks.find(x => x.id === id);
       Object.assign(t, data);
+      if (recurring && !Array.isArray(t.completedDates)) t.completedDates = [];
     } else {
-      tasks.push({ id: crypto.randomUUID(), ...data });
+      tasks.push({ id: crypto.randomUUID(), completedDates: [], ...data });
     }
     save(TASKS_KEY, tasks);
     closeModal('taskModal');
