@@ -39,28 +39,45 @@ function currentMonth() {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
 
-// Soma metaLeads/orcamento entre as campanhas de um cliente, respeitando a
-// distincao null (sem linha no Hub, nao entra na soma) vs 0 (valor real).
-// So retorna null no total se NENHUMA campanha do cliente tiver dado.
+// Etapas do funil do site que tentamos casar com stageKey do Hub. 'invest' vem
+// de budget.forCampaigns (nao de funnelStages), entao fica de fora dessa lista.
+const FUNNEL_STAGE_KEYS = ['lead', 'mql', 'ganho'];
+
+function novoAcumulador() {
+  const acc = { invest: { projetado: null, realizado: null } };
+  FUNNEL_STAGE_KEYS.forEach(k => { acc[k] = { projetado: null, realizado: null }; });
+  return acc;
+}
+
+function somaLinha(alvo, projetado, realizado) {
+  // "linha existe" (mesmo com campos 0) = dado real, soma. Ausencia de linha
+  // nunca chama esta funcao, entao o campo correspondente fica null (preserva).
+  alvo.projetado = (alvo.projetado || 0) + Math.round(Number(projetado) || 0);
+  alvo.realizado = (alvo.realizado || 0) + Math.round(Number(realizado) || 0);
+}
+
+// Soma Projetado/Realizado (meta e real ate hoje) entre as campanhas de um
+// cliente, por etapa, respeitando a distincao null (sem linha no Hub, nao
+// entra na soma) vs 0 (valor real). So fica null no total se NENHUMA
+// campanha do cliente tiver dado para aquela etapa/orcamento.
 async function metasDoCliente(token, campaignIds, month) {
-  let leadSum = null;
-  let orcamentoSum = null;
+  const acc = novoAcumulador();
   for (const campaignId of campaignIds) {
     const [stages, budget] = await chamarBatch(
       token,
       ['funnelStages.list', 'budget.forCampaigns'],
       [{ campaignId, month }, { campaignIds: [campaignId], month }]
     );
-    const lead = Array.isArray(stages) ? stages.find(s => s.stageKey === 'lead') : null;
-    if (lead) {
-      leadSum = (leadSum || 0) + Math.round(Number(lead.projetado) || 0);
+    if (Array.isArray(stages)) {
+      FUNNEL_STAGE_KEYS.forEach(key => {
+        const found = stages.find(s => String(s.stageKey || '').toLowerCase() === key);
+        if (found) somaLinha(acc[key], found.projetado, found.realizado);
+      });
     }
     const b = budget && budget.byCampaign && budget.byCampaign[String(campaignId)];
-    if (b) {
-      orcamentoSum = (orcamentoSum || 0) + (Number(b.budgetCadastrado) || 0);
-    }
+    if (b) somaLinha(acc.invest, b.budgetCadastrado, b.gastoReal);
   }
-  return { metaLeads: leadSum, orcamento: orcamentoSum };
+  return acc;
 }
 
 module.exports = async (req, res) => {
@@ -100,7 +117,7 @@ module.exports = async (req, res) => {
       const key = String(name).trim().toLowerCase();
       const campaignIds = byClientName.get(key);
       if (!campaignIds || !campaignIds.length) {
-        result[name] = { matched: false, metaLeads: null, orcamento: null };
+        result[name] = { matched: false, ...novoAcumulador() };
         continue;
       }
       const metas = await metasDoCliente(token, campaignIds, month);

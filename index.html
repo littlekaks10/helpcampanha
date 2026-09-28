@@ -1166,6 +1166,7 @@
 
       let updated = 0;
       const notMatched = [];
+      const HUB_STAGE_KEYS = ['lead', 'invest', 'mql', 'ganho'];
       clients.forEach(c => {
         const info = data.clients[c.name];
         if (!info || !info.matched) {
@@ -1173,14 +1174,18 @@
           return;
         }
         let changed = false;
-        if (info.metaLeads != null) {
-          c.stages.lead.projetado = info.metaLeads;
-          changed = true;
-        }
-        if (info.orcamento != null) {
-          c.stages.invest.projetado = info.orcamento;
-          changed = true;
-        }
+        HUB_STAGE_KEYS.forEach(key => {
+          const stage = info[key];
+          if (!stage) return;
+          if (stage.projetado != null) {
+            c.stages[key].projetado = stage.projetado;
+            changed = true;
+          }
+          if (stage.realizado != null) {
+            c.stages[key].realizado = stage.realizado;
+            changed = true;
+          }
+        });
         if (changed) updated++;
       });
 
