@@ -219,12 +219,17 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-3 mb-5">
+        <div class="flex items-center gap-3 mb-5 flex-wrap">
           <div class="relative flex-1 max-w-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input id="clientSearch" type="text" placeholder="Buscar cliente..." class="w-full glass rounded-lg pl-9 pr-3 py-2.5 text-sm placeholder-muted outline-none focus:ring-2 focus:ring-accent/50">
           </div>
+          <button id="hubSyncBtn" type="button" class="flex items-center gap-2 px-3 py-2.5 rounded-lg glass hover-glow text-sm font-medium">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
+            Sincronizar com o Hub
+          </button>
         </div>
+        <p id="hubSyncStatus" class="hidden text-xs text-muted mb-4"></p>
 
         <div id="clientFunnelList" class="space-y-4"></div>
         <div id="clientEmpty" class="hidden text-center py-16 text-muted glass rounded-2xl">
@@ -1132,6 +1137,72 @@
   clientSearch.addEventListener('input', (e) => {
     searchTerm = e.target.value;
     renderClients();
+  });
+
+  // ---------- Integração Acesso Hub ----------
+  const hubSyncBtn = document.getElementById('hubSyncBtn');
+  const hubSyncStatus = document.getElementById('hubSyncStatus');
+
+  hubSyncBtn.addEventListener('click', async () => {
+    hubSyncBtn.disabled = true;
+    hubSyncBtn.classList.add('opacity-60', 'cursor-wait');
+    hubSyncStatus.classList.remove('hidden', 'text-red-400');
+    hubSyncStatus.textContent = 'Sincronizando com o Hub...';
+
+    try {
+      const names = clients.map(c => c.name);
+      const res = await fetch('/api/hub-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ names }),
+      });
+      const data = await res.json();
+
+      if (!data.ok) {
+        hubSyncStatus.textContent = 'Falha ao sincronizar: ' + (data.error || 'erro desconhecido.');
+        hubSyncStatus.classList.add('text-red-400');
+        return;
+      }
+
+      let updated = 0;
+      const notMatched = [];
+      clients.forEach(c => {
+        const info = data.clients[c.name];
+        if (!info || !info.matched) {
+          notMatched.push(c.name);
+          return;
+        }
+        let changed = false;
+        if (info.metaLeads != null) {
+          c.stages.lead.projetado = info.metaLeads;
+          changed = true;
+        }
+        if (info.orcamento != null) {
+          c.stages.invest.projetado = info.orcamento;
+          changed = true;
+        }
+        if (changed) updated++;
+      });
+
+      if (updated > 0) {
+        save(CLIENTS_KEY, clients);
+        renderClients();
+        renderMetrics();
+      }
+
+      let msg = `Sincronizado: ${updated}/${clients.length} clientes atualizados (mês ${data.month}).`;
+      if (notMatched.length) msg += ` Não encontrados no Hub por nome: ${notMatched.join(', ')}.`;
+      if (data.tokenExpiry && data.tokenExpiry.warning) {
+        msg += ` Atenção: o token do Hub vence em ${data.tokenExpiry.daysLeft} dia(s).`;
+      }
+      hubSyncStatus.textContent = msg;
+    } catch (err) {
+      hubSyncStatus.textContent = 'Erro ao chamar a integração: ' + err.message;
+      hubSyncStatus.classList.add('text-red-400');
+    } finally {
+      hubSyncBtn.disabled = false;
+      hubSyncBtn.classList.remove('opacity-60', 'cursor-wait');
+    }
   });
 
   function openClientModal(id) {
