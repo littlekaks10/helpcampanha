@@ -132,6 +132,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-accent-glow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>
         Backlog de Tarefas
       </button>
+      <button data-tab="googleads" draggable="true" class="nav-btn flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-muted transition-all hover-glow border border-transparent cursor-grab active:cursor-grabbing">
+        <svg xmlns="http://www.w3.org/2000/svg" class="drag-handle w-3.5 h-3.5 text-muted/40 shrink-0" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        Google Ads
+      </button>
     </nav>
 
     <div class="mt-auto p-4 rounded-xl glass text-xs text-muted space-y-3">
@@ -290,6 +295,24 @@
           <p class="text-lg font-semibold mb-1">Nenhum evento neste mês</p>
           <p class="text-sm">Clique em "Novo Evento" para começar.</p>
         </div>
+      </section>
+
+      <!-- ==================== ABA GOOGLE ADS ==================== -->
+      <section id="view-googleads" class="fade-in hidden">
+        <div class="glass rounded-2xl p-5 mb-6">
+          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div>
+              <h2 class="text-[1rem] font-semibold">Passo a Passo: Google Ads do Zero</h2>
+              <p class="text-xs text-muted">Siga as fases em ordem — marque as aulas que você já assistiu.</p>
+            </div>
+            <span id="courseProgressLabel" class="text-sm font-semibold text-accent-glow shrink-0">0/0 assistidas</span>
+          </div>
+          <div class="h-2 rounded-full bg-white/5 overflow-hidden">
+            <div id="courseProgressBar" class="h-full rounded-full bg-gradient-to-r from-accent to-accent-glow transition-all" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div id="courseList" class="space-y-4"></div>
       </section>
 
     </div>
@@ -463,6 +486,7 @@
   const TASKS_KEY = 'hc_tasks';
   const CLIENTS_KEY = 'hc_clients';
   const EVENTS_KEY = 'hc_events';
+  const LEARNING_KEY = 'hc_learning';
 
   // ---------- Cloud sync (Firebase Firestore) ----------
   const firebaseConfig = {
@@ -480,11 +504,11 @@
   } catch (e) {
     console.error('Firebase indisponível, usando apenas localStorage.', e);
   }
-  const CLOUD_DOC = { hc_tasks: 'tasks', hc_clients: 'clients', hc_events: 'events' };
+  const CLOUD_DOC = { hc_tasks: 'tasks', hc_clients: 'clients', hc_events: 'events', hc_learning: 'learning' };
   // Trava de segurança: enquanto o primeiro snapshot de cada coleção não chega,
   // não deixamos nenhuma gravação local sobrescrever a nuvem (evita apagar dados
   // reais com dados de cache/seed de um dispositivo novo que ainda não sincronizou).
-  const cloudReady = { hc_tasks: !db, hc_clients: !db, hc_events: !db };
+  const cloudReady = { hc_tasks: !db, hc_clients: !db, hc_events: !db, hc_learning: !db };
   function allCloudReady() {
     return Object.values(cloudReady).every(Boolean);
   }
@@ -576,6 +600,7 @@
   let clients = migrateLegacyClients(load(CLIENTS_KEY, seedClients));
   let tasks = load(TASKS_KEY, () => seedTasks(clients));
   let events = load(EVENTS_KEY, seedEvents);
+  let watchedLessons = load(LEARNING_KEY, () => []);
 
   // ---------- Navigation ----------
   const NAV_ORDER_KEY = 'hc_nav_order';
@@ -638,6 +663,7 @@
     backlog: document.getElementById('view-backlog'),
     clientes: document.getElementById('view-clientes'),
     calendario: document.getElementById('view-calendario'),
+    googleads: document.getElementById('view-googleads'),
   };
   const pageTitle = document.getElementById('pageTitle');
   const pageSubtitle = document.getElementById('pageSubtitle');
@@ -648,6 +674,7 @@
     backlog: ['Backlog de Tarefas', 'Organize sua rotina e priorize o que importa'],
     clientes: ['Clientes & Campanhas', 'Monitore a saúde e o desempenho da sua carteira'],
     calendario: ['Calendário', 'Organize reuniões e compromissos importantes'],
+    googleads: ['Google Ads', 'Passo a passo pra criar sua primeira campanha do zero'],
   };
 
   const primaryActionLabel = {
@@ -666,14 +693,15 @@
     Object.entries(views).forEach(([k, el]) => el.classList.toggle('hidden', k !== tab));
     pageTitle.textContent = titles[tab][0];
     pageSubtitle.textContent = titles[tab][1];
-    primaryActionBtn.querySelector('span').textContent = primaryActionLabel[tab];
+    primaryActionBtn.classList.toggle('hidden', !primaryActionLabel[tab]);
+    if (primaryActionLabel[tab]) primaryActionBtn.querySelector('span').textContent = primaryActionLabel[tab];
     closeSidebar();
   }
   navBtns.forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
   primaryActionBtn.addEventListener('click', () => {
     if (activeTab === 'backlog') openTaskModal();
     else if (activeTab === 'clientes') openClientModal();
-    else openEventModal(null, selectedDate);
+    else if (activeTab === 'calendario') openEventModal(null, selectedDate);
   });
 
   // ---------- Sidebar (mobile) ----------
@@ -1554,6 +1582,7 @@
     renderClients();
     renderMetrics();
     renderCalendar();
+    renderCourse();
   }
 
   function updateSyncBanner() {
@@ -1571,6 +1600,7 @@
       { key: TASKS_KEY, getLocal: () => tasks, setLocal: (v) => { tasks = v; } },
       { key: CLIENTS_KEY, getLocal: () => clients, setLocal: (v) => { clients = migrateLegacyClients(v); } },
       { key: EVENTS_KEY, getLocal: () => events, setLocal: (v) => { events = v; } },
+      { key: LEARNING_KEY, getLocal: () => watchedLessons, setLocal: (v) => { watchedLessons = v; } },
     ];
     bindings.forEach(({ key, getLocal, setLocal }) => {
       const docRef = db.collection('hc_data').doc(CLOUD_DOC[key]);
@@ -1592,6 +1622,142 @@
         cloudReady[key] = true;
         updateSyncBanner();
       });
+    });
+  }
+
+  // ================= GOOGLE ADS COURSE =================
+  const GOOGLE_ADS_COURSE = [
+    { phase: 'Fundamentos', lessons: [
+      { id: 'g1', title: 'Entendendo os resultados do Google (Pago, orgânico, local)', url: 'https://youtu.be/pHBiX-mSyaI' },
+      { id: 'g2', title: 'Principais redes do Google Ads: Pesquisa, Display, YouTube (Visão Geral)', url: 'https://youtu.be/POdbISwXnX0' },
+      { id: 'g3', title: 'Visão geral de como funciona a rede de pesquisa do Google', url: 'https://youtu.be/wcdWXswhafs' },
+      { id: 'g4', title: 'Relevância — a chave do sucesso no Google', url: 'https://youtu.be/kdFBUnsyoEg' },
+      { id: 'g5', title: 'Palavras-chave, como definir as melhores?', url: 'https://youtu.be/8PYgeuvryfw' },
+      { id: 'g6', title: 'Estrutura de campanha base para boa relevância — Parte 1', url: 'https://youtu.be/hveKS5V0q4Q' },
+      { id: 'g7', title: 'Estrutura de campanha base para boa relevância — Parte 2', url: 'https://youtu.be/QMyAEdVZwyw' },
+    ] },
+    { phase: 'Estrutura de conta e correspondência de palavra-chave',
+      extraLink: { label: 'Treinamento de GTM (Google Tag Manager) — pasta no Drive', url: 'https://drive.google.com/drive/folders/1jpxmfSmeL4EdSkuH-JlxQQJ6D6pl1UHV?usp=sharing' },
+      lessons: [
+        { id: 'g8', title: 'Estrutura de contas e campanhas (visualizando no Google Ads)', url: 'https://youtu.be/48dExBhDk3M' },
+        { id: 'g9', title: 'Correspondência de palavra-chave', url: 'https://youtu.be/RnGHyqbHgv4' },
+        { id: 'g10', title: 'Correspondência de palavra-chave (visualizando no Google Ads)', url: 'https://youtu.be/okiAid_9Qzg' },
+      ] },
+    { phase: 'Criando a campanha de pesquisa', lessons: [
+      { id: 'g11', title: 'Refinando as melhores palavras-chave — Parte 1 (Planejador de palavras-chave)', url: 'https://youtu.be/M883t7QUm44' },
+      { id: 'g12', title: 'Refinando as melhores palavras-chave — Parte 2 (Planejador de palavras-chave)', url: 'https://youtu.be/BM3cKE1zoRk' },
+      { id: 'g13', title: 'Organizando os grupos de anúncio (Excel) — Parte 1', url: 'https://youtu.be/MNyKcMxE-tk' },
+      { id: 'g14', title: 'Organizando os grupos de anúncio (Excel) — Parte 2', url: 'https://youtu.be/PJC1Y8nsd3M' },
+      { id: 'g15', title: 'Importando o Excel no Google Ads Editor', url: 'https://youtu.be/3O8XaF9qhTs' },
+      { id: 'g16', title: 'Criando anúncios em massa pelo Editor e publicando a campanha', url: 'https://youtu.be/xHnrBpLbOy8' },
+    ] },
+    { phase: 'Leilão, índice de qualidade e conversões', lessons: [
+      { id: 'g17', title: 'Como funciona o leilão do Google — como aparecer em primeiro lugar', url: 'https://youtu.be/xADDept_WTg' },
+      { id: 'g18', title: 'Entendendo os principais fatores do Índice de Qualidade', url: 'https://youtu.be/2eIwq5JSvM0' },
+      { id: 'g19', title: 'Encontrando o Índice de Qualidade no Google Ads', url: 'https://youtu.be/QEpmWjZxqhc' },
+      { id: 'g20', title: 'O que são Conversões no Google Ads', url: 'https://youtu.be/xv8ElfrU9pI' },
+    ] },
+    { phase: 'Estratégias de lance e configurações', lessons: [
+      { id: 'g21', title: 'Estratégias de lance (CPC Manual)', url: 'https://youtu.be/7c_WpSbCfjU' },
+      { id: 'g22', title: 'Estratégias de lance (Maximizar Cliques)', url: 'https://youtu.be/Kd_b3lVGrQw' },
+      { id: 'g23', title: 'Estratégias de lance (Maximizar Conversões)', url: 'https://youtu.be/iLsVwOB7Www' },
+      { id: 'g24', title: 'Estratégias de lance (CPA Desejado)', url: 'https://youtu.be/k_g-2poKIzw' },
+      { id: 'g25', title: 'Quando usar cada estratégia de lance — Parte 1', url: 'https://youtu.be/0wzn9lPBXEk' },
+      { id: 'g26', title: 'Quando usar cada estratégia de lance — Parte 2', url: 'https://youtu.be/w8vTB_ZqTw8' },
+      { id: 'g27', title: 'Configuração de Local (Completo)', url: 'https://youtu.be/WpkSbihIA_4' },
+      { id: 'g28', title: 'Programação de anúncios — Dias e horários (Completo)', url: 'https://youtu.be/q62u1A6CCrE' },
+    ] },
+    { phase: 'Extensões de anúncio', lessons: [
+      { id: 'g29', title: 'Extensões de anúncio, o que são?', url: 'https://youtu.be/WFxrWJMK25k' },
+      { id: 'g30', title: 'Extensão — Frases de destaque', url: 'https://youtu.be/JX3rrJOq-R' },
+      { id: 'g31', title: 'Extensão — Sitelinks', url: 'https://youtu.be/rDngdFzeC6g' },
+      { id: 'g32', title: 'Extensão — Locais', url: 'https://youtu.be/X-Blb11_czc' },
+      { id: 'g33', title: 'Extensão — Snippet estruturado', url: 'https://youtu.be/Hm5Vv0h4I_o' },
+      { id: 'g34', title: 'Extensão — Chamada', url: 'https://youtu.be/QsY5uwZXdP4' },
+      { id: 'g35', title: 'Extensão — Formulário de lead', url: 'https://youtu.be/2VCRAstaMH0' },
+      { id: 'g36', title: 'Extensão — Formulário de lead + Integração', url: 'https://youtu.be/hzua9aqWSW4' },
+    ] },
+    { phase: 'Otimização pós-lançamento', lessons: [
+      { id: 'g37', title: 'Otimizações iniciais — Funil de otimização + Custo de conversão', url: 'https://youtu.be/tsGPyscwB6A' },
+      { id: 'g38', title: 'Otimização — Negativas + Custo de conversão', url: 'https://youtu.be/ck8gSJZpjAU' },
+      { id: 'g39', title: 'Otimização — CTR + Taxa de conversão', url: 'https://youtu.be/EQiyBnYF-Ng' },
+      { id: 'g40', title: 'Otimização — Cliques x Taxa de visualização de página', url: 'https://youtu.be/eL_0tJvnq4I' },
+      { id: 'g41', title: 'Otimização — Índice de Qualidade', url: 'https://youtu.be/H5CIGpY03k0' },
+      { id: 'g42', title: 'Otimização — Taxa de conversão', url: 'https://youtu.be/YYmeOw02KRk' },
+      { id: 'g43', title: 'Otimização — Acelerar e controlar campanhas', url: 'https://youtu.be/lxAym1wBa1g' },
+      { id: 'g44', title: 'Otimização — Ajustes de lance', url: 'https://youtu.be/1WOdD_MKJ6c' },
+    ] },
+  ];
+
+  function renderCourse() {
+    const list = document.getElementById('courseList');
+    if (!list) return;
+    const totalLessons = GOOGLE_ADS_COURSE.reduce((s, p) => s + p.lessons.length, 0);
+    const watchedSet = new Set(watchedLessons);
+    const watchedCount = GOOGLE_ADS_COURSE.reduce((s, p) => s + p.lessons.filter(l => watchedSet.has(l.id)).length, 0);
+
+    document.getElementById('courseProgressLabel').textContent = `${watchedCount}/${totalLessons} assistidas`;
+    document.getElementById('courseProgressBar').style.width = totalLessons ? `${Math.round((watchedCount / totalLessons) * 100)}%` : '0%';
+
+    list.innerHTML = '';
+    GOOGLE_ADS_COURSE.forEach((phase, phaseIndex) => {
+      const phaseWatched = phase.lessons.filter(l => watchedSet.has(l.id)).length;
+      const card = document.createElement('div');
+      card.className = 'glass rounded-2xl overflow-hidden';
+      card.innerHTML = `
+        <div class="course-header flex items-center justify-between gap-3 p-4 hover:bg-white/[0.03] transition cursor-pointer select-none">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-accent/15 text-accent-glow flex items-center justify-center text-xs font-bold shrink-0">${phaseIndex + 1}</div>
+            <p class="font-semibold text-sm truncate">${escapeHtml(phase.phase)}</p>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <span class="text-xs text-muted">${phaseWatched}/${phase.lessons.length}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="chevron w-4 h-4 text-muted transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+        <div class="course-body hidden px-4 pb-4 space-y-2">
+          ${phase.extraLink ? `<a href="${phase.extraLink.url}" target="_blank" rel="noopener" class="flex items-center gap-2 text-xs text-accent-glow hover:underline mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5M15 3h6v6M10 14 21 3"/></svg>
+            ${escapeHtml(phase.extraLink.label)}
+          </a>` : ''}
+          ${phase.lessons.map((l, i) => {
+            const watched = watchedSet.has(l.id);
+            return `
+              <div class="flex items-center gap-3 p-2.5 rounded-lg ${watched ? 'bg-emerald-500/5' : 'bg-white/[0.02]'}">
+                <button type="button" class="course-toggle shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition ${watched ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/25 hover:border-accent-glow'}" data-id="${l.id}" title="${watched ? 'Marcar como não assistida' : 'Marcar como assistida'}">
+                  ${watched ? '<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+                </button>
+                <p class="text-sm flex-1 min-w-0 ${watched ? 'line-through text-muted' : ''}">${i + 1}. ${escapeHtml(l.title)}</p>
+                <a href="${l.url}" target="_blank" rel="noopener" class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass hover-glow text-xs font-semibold text-accent-glow">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Assistir
+                </a>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      const header = card.querySelector('.course-header');
+      const body = card.querySelector('.course-body');
+      const chevron = card.querySelector('.chevron');
+      header.addEventListener('click', () => {
+        body.classList.toggle('hidden');
+        chevron.classList.toggle('rotate-180');
+      });
+      card.querySelectorAll('.course-toggle').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const set = new Set(watchedLessons);
+          if (set.has(id)) set.delete(id); else set.add(id);
+          watchedLessons = [...set];
+          save(LEARNING_KEY, watchedLessons);
+          renderCourse();
+        });
+      });
+
+      list.appendChild(card);
     });
   }
 
