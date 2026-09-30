@@ -1658,12 +1658,18 @@
       { id: 'g20', title: 'O que são Conversões no Google Ads', url: 'https://youtu.be/xv8ElfrU9pI' },
     ] },
     { phase: 'Estratégias de lance e configurações', lessons: [
-      { id: 'g21', title: 'Estratégias de lance (CPC Manual)', url: 'https://youtu.be/7c_WpSbCfjU' },
-      { id: 'g22', title: 'Estratégias de lance (Maximizar Cliques)', url: 'https://youtu.be/Kd_b3lVGrQw' },
-      { id: 'g23', title: 'Estratégias de lance (Maximizar Conversões)', url: 'https://youtu.be/iLsVwOB7Www' },
-      { id: 'g24', title: 'Estratégias de lance (CPA Desejado)', url: 'https://youtu.be/k_g-2poKIzw' },
-      { id: 'g25', title: 'Quando usar cada estratégia de lance — Parte 1', url: 'https://youtu.be/0wzn9lPBXEk' },
-      { id: 'g26', title: 'Quando usar cada estratégia de lance — Parte 2', url: 'https://youtu.be/w8vTB_ZqTw8' },
+      { id: 'g21', title: 'Estratégias de lance (CPC Manual)', url: 'https://youtu.be/7c_WpSbCfjU',
+        summary: 'Você define manualmente o valor máximo que topa pagar por clique em cada palavra-chave/grupo de anúncios. Dá controle total, mas exige ajuste constante. Indicada pra contas novas, sem histórico de conversão. Existe a variação "CPC otimizado" (ECPC), onde o Google ajusta um pouco seu lance conforme a chance de conversão.' },
+      { id: 'g22', title: 'Estratégias de lance (Maximizar Cliques)', url: 'https://youtu.be/Kd_b3lVGrQw',
+        summary: 'Estratégia automática: o Google tenta trazer o maior número de cliques possível dentro do orçamento diário, sem se importar com conversão. Boa pra gerar tráfego rápido ou "aquecer" uma campanha nova. Dá pra travar um CPC máximo. Risco: pode trazer cliques de baixa qualidade só pra bater volume.' },
+      { id: 'g23', title: 'Estratégias de lance (Maximizar Conversões)', url: 'https://youtu.be/iLsVwOB7Www',
+        summary: 'Estratégia automática com machine learning: o Google ajusta o lance em tempo real, leilão a leilão, pra gerar o maior número de conversões dentro do orçamento. Precisa da conversão configurada corretamente (tag/pixel), e costuma performar melhor com algum histórico mínimo de conversões.' },
+      { id: 'g24', title: 'Estratégias de lance (CPA Desejado)', url: 'https://youtu.be/k_g-2poKIzw',
+        summary: 'Você define um custo por conversão-alvo, e o Google ajusta os lances pra manter a média de custo perto desse valor. Recomendado só depois de um volume mínimo de conversões (algo como 15-30 nos últimos 30 dias). Ideal pra quem já sabe quanto pode pagar por lead/venda e quer escalar sem perder rentabilidade.' },
+      { id: 'g25', title: 'Quando usar cada estratégia de lance — Parte 1', url: 'https://youtu.be/0wzn9lPBXEk',
+        summary: 'Começo do fluxo de decisão: conta nova/sem histórico → CPC Manual ou Maximizar Cliques (foco em gerar dados); conta com conversão configurada mas pouco histórico → Maximizar Conversões, pra começar a treinar o algoritmo antes de travar uma meta de custo.' },
+      { id: 'g26', title: 'Quando usar cada estratégia de lance — Parte 2', url: 'https://youtu.be/w8vTB_ZqTw8',
+        summary: 'Continuação do raciocínio: conta madura, com bom histórico e meta de custo clara → CPA Desejado. Reforça não trocar de estratégia com muita frequência (o algoritmo "reseta" o aprendizado a cada troca) e monitorar pelo menos 1-2 semanas antes de mudar de novo.' },
       { id: 'g27', title: 'Configuração de Local (Completo)', url: 'https://youtu.be/WpkSbihIA_4' },
       { id: 'g28', title: 'Programação de anúncios — Dias e horários (Completo)', url: 'https://youtu.be/q62u1A6CCrE' },
     ] },
@@ -1723,12 +1729,15 @@
           ${phase.lessons.map((l, i) => {
             const watched = watchedSet.has(l.id);
             return `
-              <div class="flex items-center gap-3 p-2.5 rounded-lg ${watched ? 'bg-emerald-500/5' : 'bg-white/[0.02]'}">
-                <button type="button" class="course-toggle shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition ${watched ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/25 hover:border-accent-glow'}" data-id="${l.id}" title="${watched ? 'Marcar como não assistida' : 'Marcar como assistida'}">
+              <div class="flex items-start gap-3 p-2.5 rounded-lg ${watched ? 'bg-emerald-500/5' : 'bg-white/[0.02]'}">
+                <button type="button" class="course-toggle shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center transition ${watched ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/25 hover:border-accent-glow'}" data-id="${l.id}" title="${watched ? 'Marcar como não assistida' : 'Marcar como assistida'}">
                   ${watched ? '<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
                 </button>
-                <p class="text-sm flex-1 min-w-0 ${watched ? 'line-through text-muted' : ''}">${i + 1}. ${escapeHtml(l.title)}</p>
-                <a href="${l.url}" target="_blank" rel="noopener" class="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass hover-glow text-xs font-semibold text-accent-glow">
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm ${watched ? 'line-through text-muted' : ''}">${i + 1}. ${escapeHtml(l.title)}</p>
+                  ${l.summary ? `<p class="text-xs text-muted mt-1 leading-relaxed">${escapeHtml(l.summary)}</p>` : ''}
+                </div>
+                <a href="${l.url}" target="_blank" rel="noopener" class="shrink-0 mt-0.5 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg glass hover-glow text-xs font-semibold text-accent-glow">
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                   Assistir
                 </a>
